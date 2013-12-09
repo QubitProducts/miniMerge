@@ -30,14 +30,22 @@ will make program to order merged files contents as paths below:
 
 [srcBase] is runtime --src-base argument, by default, it is a current
  directory value. Dependency detection works recursively.
-Program supports basic sprockets style dependencies addressing for JS files, //=require path will be translated to //:include path.js .
+Program supports basic sprockets style dependencies addressing for JS files dependencies, 
+
+     //=require path
+
+will be translated to:
+
+     //:include path.js
+
+(Notice how its translated! Only direct paths are supported).
 
 Program also can filter contents by:
 
-- line of text (keyword, for example: //delete )
+- excluding line of text (keyword, for example: //delete )
 
-- block of text (/*~keyword*/,<--~keyword--> etc.). Using .~keyword. will 
-filter:
+- excluding block of text (by keyword, like: -dw /*~keyword*/ etc.). For example, using .~keyword. will 
+filter following text:
 
 
      AAA
@@ -46,14 +54,14 @@ filter:
      .~keyword.
      CCC
     
-to:
+to following (notice 3 mniddle lines excluded):
 
     AAA
 
 
     CCC
 
-- entire file (keyword, for example, file containing: /**exclude this file**/)
+- excluding entire file (keyword, for example: -df /**exclude this file**/ will cause any file to be excluded if contains  /**exclude this file**/ anywhere in its contents) 
 
 Content filtering is applied to final merged output file only (after merging 
 files set).
@@ -63,7 +71,7 @@ option - in addition, you can use prefix and suffix for each file path in the
 list to be prefixed/suffixed. Files list is same ordered like in merge process.
 
 When using MiniMerge it is strongly recommended to specify source base and the
-file where process starts from. Please see usage list for more details.
+file where process starts from. Please see usage list for more details - miniMerge supports MULTIPLE source bases!
 
 ================================================================================
 
@@ -98,4 +106,7 @@ file where process starts from. Please see usage list for more details.
            not go through file contents to analyse deps and only till         
            comment like contents is present)                                  
          --help,-h Shows this text                            
+
+
+For even more examples, run java -jar MiniMerge.jar -h
 
