@@ -18,21 +18,23 @@ Details
 Program will merge or list files contents in specific order if dependencies
 keywords are used, for example lines in a file named myFile.css:
 
-[...]
-//:include css/style.css
-[...]
-//:include ../otherdir/license.txt
-[...]
+     
+     [...]
+     //:include css/style.css
+     [...]
+     //:include ../otherdir/license.txt
+     [...]
 
 will make program to order merged files contents as paths below: 
 
-[srcBase]/css/style.css
-[scrBase]/../otherdir/license.txt
-[srcBase]myFile.css
+    [srcBase]/css/style.css
+    [scrBase]/../otherdir/license.txt
+    [srcBase]myFile.css
 
 [srcBase] is runtime --src-base argument, by default, it is a current
  directory value. Dependency detection works recursively.
 Program supports basic sprockets style dependencies addressing for JS files, 
+
 //=require path will be translated to //:include path.js
 
 Program also can filter contents by:
@@ -41,14 +43,17 @@ Program also can filter contents by:
 
 - block of text (/*~keyword*/,<--~keyword--> etc.). Using .~keyword. will 
 filter:
-    AAA
-    .keyword.
-    BBB
-    .~keyword.
-    CCC
-to:
-    AAA
 
+
+     AAA
+     .keyword.
+     BBB
+     .~keyword.
+     CCC
+    
+to:
+
+    AAA
 
 
     CCC
@@ -67,34 +72,35 @@ file where process starts from. Please see usage list for more details.
 
 ================================================================================
 
- Usage:                                                               
-                                                                      
-  -i <include extensions - file ENDINGS, default: * (all)>            
-      example: -i .js,.css,.xml (default: .js)                        
-  -o <output file path> This argument must be specified.              
-  --info Show final config summary(info)                              
-  -s <src dir/file path> if it is not directory, --source-base mode is
-     enabled. If it is directory, minimerge will take as subject all  
-     files from that directory and will treat it as a source base.    
-  -ir ignore Require.js deps (default: false)                         
-  --index It will ignore merging and generate prefix,suffix list      
-  --prefix <prefix for index generation>                              
-  --suffix <suffix for index generation>                              
-  --not-relative <absolute paths index generation, default: false>    
-  -vv very verbose                                                    
-  -v verbose                                                          
-  -nd <process no dependencies in files? see: //= and //:include>     
-  -dl <cut line contains strings(comma separated)>                    
-   example: /*D*/ or /*X*/ (defaults: /*D*/,//=,//:include)           
-  -df <file exclude patterns, defaults:                               
-   /****!ignore!****/,////!ignore!////,##!ignore!## (comma separated) 
-  -dw <wrapped text cut by strings(comma separated)                   
-   example: /*start*/ <cut text> /*~start*/ in file, command line arg 
-   will be: -dw /*~start*/ (keep ~ unique, it's used to mark endings. 
- --parse-only-first-comment-dependencies for performance reasons     
-   you may want to parse dependencies contents only for first lines   
-   starting in a file as a comment (it means that minimerege will      
-   not go through file contents to analyse deps and only till         
-   comment like contents is present)                                  
- --help,-h Shows this text                            
+     
+         Usage:                                                               
+                                                                              
+          -i <include extensions - file ENDINGS, default: * (all)>            
+              example: -i .js,.css,.xml (default: .js)                        
+          -o <output file path> This argument must be specified.              
+          --info Show final config summary(info)                              
+          -s <src dir/file path> if it is not directory, --source-base mode is
+             enabled. If it is directory, minimerge will take as subject all  
+             files from that directory and will treat it as a source base.    
+          -ir ignore Require.js deps (default: false)                         
+          --index It will ignore merging and generate prefix,suffix list      
+          --prefix <prefix for index generation>                              
+          --suffix <suffix for index generation>                              
+          --not-relative <absolute paths index generation, default: false>    
+          -vv very verbose                                                    
+          -v verbose                                                          
+          -nd <process no dependencies in files? see: //= and //:include>     
+          -dl <cut line contains strings(comma separated)>                    
+           example: /*D*/ or /*X*/ (defaults: /*D*/,//=,//:include)           
+          -df <file exclude patterns, defaults:                               
+           /****!ignore!****/,////!ignore!////,##!ignore!## (comma separated) 
+          -dw <wrapped text cut by strings(comma separated)                   
+           example: /*start*/ <cut text> /*~start*/ in file, command line arg 
+           will be: -dw /*~start*/ (keep ~ unique, it's used to mark endings. 
+         --parse-only-first-comment-dependencies for performance reasons     
+           you may want to parse dependencies contents only for first lines   
+           starting in a file as a comment (it means that minimerege will      
+           not go through file contents to analyse deps and only till         
+           comment like contents is present)                                  
+         --help,-h Shows this text                            
 
