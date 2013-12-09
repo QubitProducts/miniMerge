@@ -30,9 +30,7 @@ will make program to order merged files contents as paths below:
 
 [srcBase] is runtime --src-base argument, by default, it is a current
  directory value. Dependency detection works recursively.
-Program supports basic sprockets style dependencies addressing for JS files, 
-
-//=require path will be translated to //:include path.js
+Program supports basic sprockets style dependencies addressing for JS files, //=require path will be translated to //:include path.js .
 
 Program also can filter contents by:
 
