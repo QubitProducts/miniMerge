@@ -48,11 +48,11 @@ Program also can filter contents by:
 filter following text:
 
 
-     AAA
-     .keyword.
-     BBB
-     .~keyword.
-     CCC
+          AAA
+          //any foo                            .keyword.
+          BBB
+          .~keyword.   /// or bar
+          CCC
     
 to following (notice 3 mniddle lines excluded):
 
