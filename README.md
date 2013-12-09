@@ -19,11 +19,8 @@ Program will merge or list files contents in specific order if dependencies
 keywords are used, for example lines in a file named myFile.css:
 
      
-     [...]
      //:include css/style.css
-     [...]
      //:include ../otherdir/license.txt
-     [...]
 
 will make program to order merged files contents as paths below: 
 
