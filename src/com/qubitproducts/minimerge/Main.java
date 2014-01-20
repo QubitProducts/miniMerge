@@ -202,7 +202,7 @@ public class Main {
   public static void main(String[] args) throws IOException {
     
     boolean exit = false;
-    
+    long start = System.nanoTime();
     /*
      * Initialise the arguments to be stored.
      */
@@ -320,17 +320,17 @@ public class Main {
             " CONFIG SELECTED:");
       ps.println(
             " -i  Included file types: " + filesIncluded
-        + "\n -o  Output:" + 
+        + "\n -o  Output: " + 
               (out == null ? "null" : (new File(out)).getAbsolutePath())
-        + "\n -s  Src dir:" + src
+        + "\n -s  Src dir: " + src
         + "\n -ir Ignoring RequireJS: " + (ignoreRJS ? "yes" : "no")
-        + "\n -nd No dependencies:" + (!dependencies)
+        + "\n -nd No dependencies: " + (!dependencies)
         + "\n -v  Verbosive: " + (verbose ? "yes" : "no")
         + "\n -vv Very verbosive: " + (vverbose ? "yes" : "no")
-        + "\n -dl Excluding lines containing:" + linesToExclude
-        + "\n -dw Exclude blocks wrapped by:" + wrapsToExclude
-        + "\n -df Exclude files with keywords:" + filesToExclude
-        + "\n --parse-only-first-comment-dependencies:" + parseOnlyFirstComments
+        + "\n -dl Excluding lines containing: " + linesToExclude
+        + "\n -dw Exclude blocks wrapped by: " + wrapsToExclude
+        + "\n -df Exclude files with keywords: " + filesToExclude
+        + "\n --parse-only-first-comment-dependencies: " + parseOnlyFirstComments
         + "\n --source-base " + sourceBase
         + "\n --index: "
         + (generateIndex ? 
@@ -417,8 +417,14 @@ public class Main {
         } else {
           miniProcessor.mergeFilesToFile(paths, true, out);
         }
-        log("Merging/Index finished.\n\n");
-        log("Heap: " + Runtime.getRuntime().totalMemory()/1024/1024 + "MB\n");
+        if (info) {
+          ps.println("Done in: "
+                  + ((float)(System.nanoTime() - start))/1000000000.0
+                  + "s" );
+          ps.println("Merging/Index finished.\n\n");
+          ps.println("Heap: " + Runtime.getRuntime().totalMemory()/1024/1024
+                  + "MB\n");
+        }
       } catch (FileNotFoundException ex) {
         Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
       } catch (IOException ex) {
