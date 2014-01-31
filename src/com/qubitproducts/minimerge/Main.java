@@ -144,17 +144,19 @@ public class Main {
 "  -v verbose                                                          \n" +
 "  -nd <process no dependencies in files? see: //= and //:include>     \n" +
 "  -dl <cut line contains strings(comma separated)>                    \n" +
-"   example: /*D*/ or /*X*/ (defaults: /*D*/,//=,//:include)           \n" +
+"   example: /*D*/ or /*X*/ (defaults: /*D*/,//=,//:include,//= require)\n" +
 "  -df <file exclude patterns, defaults:                               \n" +
 "   /****!ignore!****/,////!ignore!////,##!ignore!## (comma separated) \n" +
 "  -dw <wrapped text cut by strings(comma separated)                   \n" +
 "   example: /*start*/ <cut text> /*~start*/ in file, command line arg \n" +
 "   will be: -dw /*~start*/ (keep ~ unique, it's used to mark endings. \n" +
-" --parse-only-first-comment-dependencies for performance reasons     \n" +
+" --parse-only-first-comment-dependencies for performance reasons      \n" +
 "   you may want to parse dependencies contents only for first lines   \n" +
-"   starting in a file as a comment (it means that minimerege will      \n" +
+"   starting in a file as a comment (it means that minimerege will     \n" +
 "   not go through file contents to analyse deps and only till         \n" +
 "   comment like contents is present)                                  \n" +
+" --add-base If this option is added and --index is used the file list \n" +
+"   index will have source base appended accordigly to where it is found.\n" +
 " --help,-h Shows this text                            \n" +
 "\n" +
 "" +
@@ -222,6 +224,7 @@ public class Main {
     boolean parseOnlyFirstComments = false;
     String prefix = "<script type=\"text/javascript\" src=\"";
     String suffix = "\"></script>";
+    boolean withSourceBase = false;
     
     MiniProcessor miniProcessor;
     
@@ -273,6 +276,8 @@ public class Main {
           exit = true;
           info = true;
           help = true;
+        } else if (args[i].equals("--add-base")) {
+          withSourceBase = true;
         }
       }
     } catch (NullPointerException ex) {
@@ -340,6 +345,7 @@ public class Main {
         + "\n --suffix (Index paths suffix): " + suffix
         + "\n --not-relative: " + (relative ? "yes, paths will be absolute"
               : "no, paths will be as defined in source base.")
+        + "\n --add-base: " + withSourceBase 
       + "\n\n");
     }
     
@@ -397,7 +403,8 @@ public class Main {
                   .getPrefixScriptPathSuffixString(
                         paths,
                         prefix,
-                        suffix + "\n")
+                        suffix + "\n",
+                        withSourceBase)
                   .toString();
 
           BufferedWriter writer = null;

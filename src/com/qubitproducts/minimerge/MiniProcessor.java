@@ -199,7 +199,8 @@ public class MiniProcessor {
   protected String[] IGNORE = {
     "/*D*/",
     "//=",
-    "//:include"
+    "//:include",
+    "//= require"
   };
   
   /**

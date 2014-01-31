@@ -94,7 +94,7 @@ file where process starts from. Please see usage list for more details - miniMer
           -v verbose                                                          
           -nd <process no dependencies in files? see: //= and //:include>     
           -dl <cut line contains strings(comma separated)>                    
-           example: /*D*/ or /*X*/ (defaults: /*D*/,//=,//:include)           
+           example: /*D*/ or /*X*/ (defaults: /*D*/,//=,//:include,//= require)           
           -df <file exclude patterns, defaults:                               
            /****!ignore!****/,////!ignore!////,##!ignore!## (comma separated) 
           -dw <wrapped text cut by strings(comma separated)                   
@@ -103,8 +103,10 @@ file where process starts from. Please see usage list for more details - miniMer
          --parse-only-first-comment-dependencies for performance reasons     
            you may want to parse dependencies contents only for first lines   
            starting in a file as a comment (it means that minimerege will      
-           not go through file contents to analyse deps and only till         
-           comment like contents is present)                                  
+           not go through file contents to analyze dependencies and only till         
+           comment like contents is present)
+         --add-base If this option is added and --index is used the file list
+           index will have source base appended accordingly to where it is found.                               
          --help,-h Shows this text                            
 
 

@@ -229,18 +229,30 @@ public class MiniProcessorHelper {
    * @param paths
    * @param pre
    * @param suf
+   * @param appendSrcBase
    * @return String result by concatenating all map items with pre/suffixed 
    * strings.
    */
   static public StringBuilder getPrefixScriptPathSuffixString(
           Map<String, String> paths,
           String pre,
-          String suf) {
+          String suf,
+          boolean appendSrcBase) {
     StringBuilder builder = new StringBuilder();
     Iterator it = paths.keySet().iterator();
     while (it.hasNext()) {
       builder.append(pre);
-      builder.append(it.next());
+      String path = (String)it.next();
+      
+      if (appendSrcBase) {
+        String srcDir = paths.get(path);
+        builder.append(srcDir);
+        if (!srcDir.endsWith(File.separator)) {
+          builder.append(File.separator);
+        }
+      }
+      
+      builder.append(path);
       builder.append(suf);
     }
     return builder;
