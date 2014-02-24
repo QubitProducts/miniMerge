@@ -27,6 +27,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import com.qubitproducts.minimerge.MiniProcessor.LogLevel;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -157,6 +158,14 @@ public class Main {
 "   comment like contents is present)                                  \n" +
 " --add-base If this option is added and --index is used the file list \n" +
 "   index will have source base appended accordigly to where it is found.\n" +
+" --exclude-file-patterns If this option is specified, each comma       \n" +
+"   separated string will be tested with java regex method to match \n" +
+"   name of file. If any of strings match - file will be     \n" +
+"   excluded from processing." +
+" --exclude-file-path-patterns If this option is specified, each comma       \n" +
+"   separated string will be tested with java regex method to match \n" +
+"   name of full file path. If any of strings match - file will be     \n" +
+"   excluded from processing." +
 " --help,-h Shows this text                            \n" +
 "\n" +
 "" +
@@ -215,7 +224,7 @@ public class Main {
     boolean relative = true;
     boolean ignoreRJS = false;
     String src = null;
-    ArrayList<String> sourceBase = new ArrayList<String>();
+    List<String> sourceBase = new ArrayList<String>();
     String linesToExclude = null;
     String filesToExclude = null;
     String wrapsToExclude = null;
@@ -225,6 +234,8 @@ public class Main {
     String prefix = "<script type=\"text/javascript\" src=\"";
     String suffix = "\"></script>";
     boolean withSourceBase = false;
+    String excludeFilePatterns =  null;
+    String excludeFilePathPatterns =  null;
     
     MiniProcessor miniProcessor;
     
@@ -278,6 +289,10 @@ public class Main {
           help = true;
         } else if (args[i].equals("--add-base")) {
           withSourceBase = true;
+        } else if (args[i].equals("--exclude-file-patterns")) {
+          excludeFilePatterns =  args[i++ + 1];
+        } else if (args[i].equals("--exclude-file-path-patterns")) {
+          excludeFilePathPatterns = args[i++ + 1];
         }
       }
     } catch (NullPointerException ex) {
@@ -376,6 +391,14 @@ public class Main {
         miniProcessor = new MiniProcessor(out);
         miniProcessor.setSourceBase(sourceBase.toArray(new String[0]));
         miniProcessor.setMergeOnly(filesIncluded.split(","));
+        if (excludeFilePatterns != null) {
+          miniProcessor
+              .setFileExcludePatterns(excludeFilePatterns.split(","));
+        }
+        if (excludeFilePathPatterns != null) {
+          miniProcessor
+              .setFilePathExcludePatterns(excludeFilePathPatterns.split(","));
+        }
         miniProcessor.setIgnoreRequire(ignoreRJS);
         miniProcessor.setIgnores(linesToExclude.split(","));
         miniProcessor.setFileIgnores(filesToExclude.split(","));

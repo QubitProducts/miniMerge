@@ -63,7 +63,7 @@ public class MiniProcessor {
         System.out.println(msg);
     }
   }
-
+  
   /**
    * Simple logging function.
    * It does log if this.isVeryVerbosive() returns true
@@ -92,6 +92,9 @@ public class MiniProcessor {
     "/****!ignore!****/",
     "##!ignore!##"
   };
+  private String[] fileExcludePatterns = null;
+  private String[] filePathExcludePatterns = null;
+
 
   /**
    * Private function checking if line should be excluded. It uses instance
@@ -180,6 +183,34 @@ public class MiniProcessor {
       }
     }
     return null;
+  }
+
+  /**
+   * @return the fileExcludePatterns
+   */
+  public String[] getFileExcludePatterns() {
+    return fileExcludePatterns;
+  }
+
+  /**
+   * @param fileExcludePatterns the fileExcludePatterns to set
+   */
+  public void setFileExcludePatterns(String[] fileExcludePatterns) {
+    this.fileExcludePatterns = fileExcludePatterns;
+  }
+
+  /**
+   * @return the filePathExcludePatterns
+   */
+  public String[] getFilePathExcludePatterns() {
+    return filePathExcludePatterns;
+  }
+
+  /**
+   * @param filePathExcludePatterns the filePathExcludePatterns to set
+   */
+  public void setFilePathExcludePatterns(String[] filePathExcludePatterns) {
+    this.filePathExcludePatterns = filePathExcludePatterns;
   }
 
   /**
@@ -283,10 +314,29 @@ public class MiniProcessor {
    * @param test
    * @return
    */
-  protected boolean isExtensionIncluded(String test) {
+  protected boolean testIfFileIncluded(File test) {
     String[] strings = this.getMergeOnly();
     for (int i = 0; i < strings.length; i++) {
-      if (strings[i].equals("*") || test.endsWith(this.getMergeOnly()[i])) {
+      if (strings[i].equals("*") ||
+              test.getName().endsWith(this.getMergeOnly()[i])) {
+        if (this.getFileExcludePatterns() != null) {
+          for(String match : this.getFileExcludePatterns()) {
+            if (test.getName().matches(match)) {
+              return false;
+            }
+          }
+        }
+        if (this.getFilePathExcludePatterns() != null) {
+          for(String match : this.getFilePathExcludePatterns()) {
+            try{
+              if (test.getCanonicalPath().matches(match)) {
+                return false;
+              }
+            } catch (IOException e) {
+              //just try
+            }
+          }
+        }
         return true;
       }
     }
@@ -497,7 +547,7 @@ public class MiniProcessor {
 
     //check which match extensions set
     for (int i = 0; i < files.size(); i++) {
-      if (!this.isExtensionIncluded(files.get(i).getName())
+      if (!this.testIfFileIncluded(files.get(i))
               || files.get(i).getCanonicalFile().getAbsolutePath()
               .equals(this.getCurrentOutput())) {
         // do not include current startingFile
@@ -510,12 +560,14 @@ public class MiniProcessor {
     
     boolean checkIfExists = true;
     
+    String[] srcs = this.getSourceBase();
+    
     //directory option with unspecified src dir
     if (    (!isFile 
-              && this.getSourceBase().length == 1 
-              && this.getSourceBase()[0].equals("")) ||
+              && srcs.length == 1 
+              && srcs[0].equals("")) ||
             (
-              this.getSourceBase().length == 0
+              srcs.length == 0
             )
        ) {
       this.setSourceBase(new String[]{startingFile.getPath()});
@@ -735,11 +787,10 @@ public class MiniProcessor {
     //all relative paths are versus src base
     srcBase = srcBase.getCanonicalFile();
     file = file.getCanonicalFile();
-
+    String prefix = srcBase.getAbsolutePath() + File.separator;
     if (excludeThisFile) {
       //dont add but queue it in excludes for future ignores
       if (relative) {
-        String prefix = srcBase.getAbsolutePath() + File.separator;
         excludes.put(tmp = file.getAbsolutePath().replace(prefix, ""), dirBase);
       } else {
         excludes.put(tmp = file.getAbsolutePath(), dirBase);
@@ -757,8 +808,6 @@ public class MiniProcessor {
       if (addToPaths) {
         boolean added = false;
         if (relative) {
-          String prefix = srcBase.getAbsolutePath()
-                  + File.separator;
           added = this.addPath(paths,
                   tmp = file.getAbsolutePath().replace(prefix, ""),
                   excludes,
@@ -775,7 +824,7 @@ public class MiniProcessor {
                   + paths.size()
                   + ", base:" + dirBase
                   + " , relative:" + relative + ")   : "
-                  + tmp
+                  + tmp + " [ src base related: " + prefix + "]"
                   //  +"     Absolute: " + file.getAbsolutePath()
                   + "     From: "
                   + ((from != null) ? from.getPath()
