@@ -162,6 +162,7 @@ public class MiniProcessor {
     this.sourceBase = srcs.toArray(new String[0]);
   }
 
+  private HashMap<String,String> helpingMap = new HashMap<String, String>();
   /**
    * Function finds dependency path depending on input specified and
    * sourceBase array. It returns null if none of matched paths corresponds
@@ -170,16 +171,22 @@ public class MiniProcessor {
    * paths and checking if any of paths is a file - if yes, the tested path is
    * returned and its base.
    * 
+   * 
    * @param String dependency to be checked
    * @return Array of strings with path at 0 index and
    * source base at 1 index if dependency exists or null otherwise.
    */
   public String[] getDependenciesPath(String dependencyPathString) {
-    String[] dirs = this.getSourceBase();
-    for (int i = 0; i < dirs.length; i++) {
-      String path = this.getSourceBase()[i] + dependencyPathString;
-      if (new File(path).exists()) {
-        return new String[]{path, dirs[i]};
+    if (dependencyPathString != null) {
+      String[] dirs = this.getSourceBase();
+      for (int i = 0; i < dirs.length; i++) {
+        String path = dirs[i] + dependencyPathString;
+        //@todo - adding virtual paths??? so fir single repo virtual path is listed?
+        if (helpingMap.containsKey(path) ||
+                new File(path).exists()) {
+          helpingMap.put(path, null);
+          return new String[]{path, dirs[i]};
+        }
       }
     }
     return null;
@@ -668,7 +675,7 @@ public class MiniProcessor {
                 + ",  (original text: " + dependencyPathString + ")");
 
             File tmp = new File(dependencyPath[0]);
-
+            //do not analyse files already in paths
             if (!this.dependenciesChecked
                     .containsKey(tmp.getAbsolutePath())) {
               //improve by marking by absolute path too
@@ -687,13 +694,14 @@ public class MiniProcessor {
           } else {
             if (dependencyPathString != null && dependencyPath == null) {
               //do not recheck!
-              this.dependenciesChecked.put(dependencyPathString, null);
               log(this.getCurrentIndent()
                 + ">>> !!! Dependency file could not be found, either file does "
                 + "not exist or source base is incorrect! dependency line: "
                 + line);
             }
           }
+          
+          this.dependenciesChecked.put(dependencyPathString, null);
           
           line = in.readLine();
           
