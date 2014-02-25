@@ -161,11 +161,11 @@ public class Main {
 " --exclude-file-patterns If this option is specified, each comma       \n" +
 "   separated string will be tested with java regex method to match \n" +
 "   name of file. If any of strings match - file will be     \n" +
-"   excluded from processing." +
+"   excluded from processing.\n" +
 " --exclude-file-path-patterns If this option is specified, each comma       \n" +
 "   separated string will be tested with java regex method to match \n" +
 "   name of full file path. If any of strings match - file will be     \n" +
-"   excluded from processing." +
+"   excluded from processing.\n" +
 " --help,-h Shows this text                            \n" +
 "\n" +
 "" +

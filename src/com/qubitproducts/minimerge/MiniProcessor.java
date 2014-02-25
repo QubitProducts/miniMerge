@@ -721,7 +721,8 @@ public class MiniProcessor {
       log(this.getCurrentIndent()
               + ">>> !!! Dependency file not found, either file does "
               + "not exist or source base is incorrect! PATH: "
-              + file.getPath());
+              + file.getPath() + "\n Exception: \n");
+      log(ex.getMessage());
 
     } finally {
       if (in != null) {
@@ -788,6 +789,7 @@ public class MiniProcessor {
     srcBase = srcBase.getCanonicalFile();
     file = file.getCanonicalFile();
     String prefix = srcBase.getAbsolutePath() + File.separator;
+    
     if (excludeThisFile) {
       //dont add but queue it in excludes for future ignores
       if (relative) {
@@ -795,7 +797,7 @@ public class MiniProcessor {
       } else {
         excludes.put(tmp = file.getAbsolutePath(), dirBase);
       }
-      log("EXCLUDED path         : " + tmp);
+      log("EXCLUDED path : " + tmp);
     } else {
       boolean addToPaths = true;
       if (checkIfFilesExists) {
@@ -805,31 +807,50 @@ public class MiniProcessor {
                   + file.getAbsolutePath());
         }
       }
+      
       if (addToPaths) {
-        boolean added = false;
+        
+        String path = null;
+        
         if (relative) {
-          added = this.addPath(paths,
-                  tmp = file.getAbsolutePath().replace(prefix, ""),
-                  excludes,
-                  dirBase);
+          path = file.getAbsolutePath().replace(prefix, "");
         } else {
-          added = this.addPath(paths,
-                  tmp = file.getAbsolutePath(),
-                  excludes,
-                  dirBase);
+          path = file.getAbsolutePath();
         }
-        if (added) {
-          log(this.getCurrentIndent()
-                  + ">>> Queued current path (total:"
+        
+        boolean added = false;
+        
+        if (!paths.containsKey(path)) {
+          added = this.addPath(
+            paths,
+            tmp = path,
+            excludes,
+            dirBase);
+        
+          if (added) {
+            log(this.getCurrentIndent()
+                    + ">>> Queued current path (total:"
+                    + paths.size()
+                    + ", base:" + dirBase
+                    + " , relative:" + relative + ")   : "
+                    + tmp + " [ src base related: " + prefix + "]"
+                    //  +"     Absolute: " + file.getAbsolutePath()
+                    + "     From: "
+                    + ((from != null) ? from.getPath()
+                    : "DIRECT LISTING - NOT AS DEPENDENCY"));
+
+          }
+        } else {
+          logVeryVerbosive(this.getCurrentIndent()
+                  + ">>> Already queued path (total:"
                   + paths.size()
-                  + ", base:" + dirBase
+                  + ", base: " + paths.get(path)
                   + " , relative:" + relative + ")   : "
-                  + tmp + " [ src base related: " + prefix + "]"
+                  + path + " [ src base related: " + prefix + "]"
                   //  +"     Absolute: " + file.getAbsolutePath()
                   + "     From: "
                   + ((from != null) ? from.getPath()
                   : "DIRECT LISTING - NOT AS DEPENDENCY"));
-          
         }
       }
     }
