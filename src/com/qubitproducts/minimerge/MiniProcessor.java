@@ -585,6 +585,11 @@ public class MiniProcessor {
 
     String inputFileBaseDir = this.getSourceBase()[0];
     
+    //this is a hash ensuring that no file duplicates will occure in dependencies
+    //@TODO check where it can be added
+    alreadyProcessed = 
+          new HashMap<String, Boolean>();
+    
     for (int i = 0; i < files.size(); i++) {
       //log( files.get(i).getAbsolutePath());
       this.processFileDependencies(
@@ -601,7 +606,7 @@ public class MiniProcessor {
     if (ignoreDependencies) {
       log(">>> Dependencies includes ignored !");
     }
-
+    
     return paths;
   }
   private Map<String, String> dependenciesChecked =
@@ -765,6 +770,9 @@ public class MiniProcessor {
     return stringBuilder.toString();
   }
   
+  private HashMap<String, Boolean> alreadyProcessed = 
+          new HashMap<String, Boolean>();
+  
   /**
    * Private function handling addng/queueing elements to the paths linked map.
    * It  also registers already excluded elements.
@@ -817,6 +825,11 @@ public class MiniProcessor {
       }
       
       if (addToPaths) {
+        if (alreadyProcessed.containsKey(file.getAbsolutePath())) {
+          return;
+        } else {
+          alreadyProcessed.put(file.getAbsolutePath(), true);
+        }
         
         String path = null;
         
