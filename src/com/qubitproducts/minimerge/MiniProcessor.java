@@ -587,9 +587,9 @@ public class MiniProcessor {
     
     //this is a hash ensuring that no file duplicates will occure in dependencies
     //@TODO check where it can be added
-    alreadyProcessed = 
-          new HashMap<String, Boolean>();
-    
+    alreadyProcessed =  new HashMap<String, Boolean>();
+    helpingMap = new HashMap<String, String>();
+    this.dependenciesChecked.clear();
     for (int i = 0; i < files.size(); i++) {
       //log( files.get(i).getAbsolutePath());
       this.processFileDependencies(
@@ -632,9 +632,8 @@ public class MiniProcessor {
           File from) throws IOException {
     //from is recursion parameter! dont use.
     if (from == null) {
-      this.dependenciesChecked.clear();
       this.setIndentLevel(0);
-      logVeryVerbosive("Searching for dependencies in file ");
+      logVeryVerbosive("Searching for dependencies in file " + file.getPath());
     }
 
     String line, dependencyPathString = null;
