@@ -233,11 +233,12 @@ public class MiniProcessorHelper {
    * @return String result by concatenating all map items with pre/suffixed 
    * strings.
    */
-  static public StringBuilder getPrefixScriptPathSuffixString(
+  static public String getPrefixScriptPathSuffixString(
           Map<String, String> paths,
           String pre,
           String suf,
-          boolean appendSrcBase) {
+          boolean appendSrcBase,
+          boolean unixStyle) {
     StringBuilder builder = new StringBuilder();
     Iterator it = paths.keySet().iterator();
     while (it.hasNext()) {
@@ -255,6 +256,11 @@ public class MiniProcessorHelper {
       builder.append(path);
       builder.append(suf);
     }
-    return builder;
+    
+    if (File.separatorChar == '\\' && unixStyle) {
+      return builder.toString().replaceAll("\\\\", "/");
+    }
+    
+    return builder.toString();
   }
 }

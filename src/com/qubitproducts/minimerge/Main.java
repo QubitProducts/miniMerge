@@ -162,6 +162,8 @@ public class Main {
 "   separated string will be tested with java regex method to match \n" +
 "   name of file. If any of strings match - file will be     \n" +
 "   excluded from processing.\n" +
+" --unix-path If index listings should care for UNIX style output, " +
+"         default is: true\n" +
 " --exclude-file-path-patterns If this option is specified, each comma       \n" +
 "   separated string will be tested with java regex method to match \n" +
 "   name of full file path. If any of strings match - file will be     \n" +
@@ -229,6 +231,7 @@ public class Main {
     String filesToExclude = null;
     String wrapsToExclude = null;
     boolean generateIndex = false;
+    boolean unixPath = true;
     boolean dependencies = true;
     boolean parseOnlyFirstComments = false;
     String prefix = "<script type=\"text/javascript\" src=\"";
@@ -293,6 +296,8 @@ public class Main {
           excludeFilePatterns =  args[i++ + 1];
         } else if (args[i].equals("--exclude-file-path-patterns")) {
           excludeFilePathPatterns = args[i++ + 1];
+        } else if (args[i].equals("--unix-path")) {
+          unixPath = true;
         }
       }
     } catch (NullPointerException ex) {
@@ -360,7 +365,8 @@ public class Main {
         + "\n --suffix (Index paths suffix): " + suffix
         + "\n --not-relative: " + (relative ? "yes, paths will be absolute"
               : "no, paths will be as defined in source base.")
-        + "\n --add-base: " + withSourceBase 
+        + "\n --add-base: " + withSourceBase
+        + "\n --unix-path: " + unixPath
       + "\n\n");
     }
     
@@ -427,8 +433,8 @@ public class Main {
                         paths,
                         prefix,
                         suffix + "\n",
-                        withSourceBase)
-                  .toString();
+                        withSourceBase,
+                        unixPath);
 
           BufferedWriter writer = null;
 

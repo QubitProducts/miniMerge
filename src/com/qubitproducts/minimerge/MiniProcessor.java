@@ -590,10 +590,15 @@ public class MiniProcessor {
     alreadyProcessed =  new HashMap<String, Boolean>();
     helpingMap = new HashMap<String, String>();
     this.dependenciesChecked.clear();
-    for (int i = 0; i < files.size(); i++) {
+    for (File file : files) {
       //log( files.get(i).getAbsolutePath());
+      String dependencyPath = file.getAbsolutePath();
+      if (this.dependenciesChecked.containsKey(dependencyPath)) {
+        continue;
+      }
+      this.dependenciesChecked.put(dependencyPath, null);
       this.processFileDependencies(
-              files.get(i),
+              file,
               paths,
               excludes,
               relative,
