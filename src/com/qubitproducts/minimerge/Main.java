@@ -342,31 +342,31 @@ public class Main {
 
     if (info) {
       ps.println(
-            " CONFIG SELECTED:");
+            " miniMERGE config selected:");
       ps.println(
-            " -i  Included file types: " + filesIncluded
-        + "\n -o  Output: " + 
+            "  -i  Included file types: " + filesIncluded
+        + "\n  -o  Output: " + 
               (out == null ? "null" : (new File(out)).getAbsolutePath())
-        + "\n -s  Src dir: " + src
-        + "\n -ir Ignoring RequireJS: " + (ignoreRJS ? "yes" : "no")
-        + "\n -nd No dependencies: " + (!dependencies)
-        + "\n -v  Verbosive: " + (verbose ? "yes" : "no")
-        + "\n -vv Very verbosive: " + (vverbose ? "yes" : "no")
-        + "\n -dl Excluding lines containing: " + linesToExclude
-        + "\n -dw Exclude blocks wrapped by: " + wrapsToExclude
-        + "\n -df Exclude files with keywords: " + filesToExclude
-        + "\n --parse-only-first-comment-dependencies: " + parseOnlyFirstComments
-        + "\n --source-base " + sourceBase
-        + "\n --index: "
+        + "\n  -s  Src dir: " + src
+        + "\n  -ir Ignoring RequireJS: " + (ignoreRJS ? "yes" : "no")
+        + "\n  -nd No dependencies: " + (!dependencies)
+        + "\n  -v  Verbosive: " + (verbose ? "yes" : "no")
+        + "\n  -vv Very verbosive: " + (vverbose ? "yes" : "no")
+        + "\n  -dl Excluding lines containing: " + linesToExclude
+        + "\n  -dw Exclude blocks wrapped by: " + wrapsToExclude
+        + "\n  -df Exclude files with keywords: " + filesToExclude
+        + "\n  --parse-only-first-comment-dependencies: " + parseOnlyFirstComments
+        + "\n  --source-base " + sourceBase
+        + "\n  --index: "
         + (generateIndex ? 
                 " yes (Generate paths index only (no files merging).)"
               : " no (Merge files.)")
-        + "\n --prefix (Index paths prefix): " + prefix
-        + "\n --suffix (Index paths suffix): " + suffix
-        + "\n --not-relative: " + (relative ? "yes, paths will be absolute"
+        + "\n  --prefix (Index paths prefix): " + prefix
+        + "\n  --suffix (Index paths suffix): " + suffix
+        + "\n  --not-relative: " + (relative ? "yes, paths will be absolute"
               : "no, paths will be as defined in source base.")
-        + "\n --add-base: " + withSourceBase
-        + "\n --unix-path: " + unixPath
+        + "\n  --add-base: " + withSourceBase
+        + "\n  --unix-path: " + unixPath
       + "\n\n");
     }
     

@@ -596,6 +596,7 @@ public class MiniProcessor {
       if (this.dependenciesChecked.containsKey(dependencyPath)) {
         continue;
       }
+      //dont process current path, if any dependencies chain contains it
       this.dependenciesChecked.put(dependencyPath, null);
       this.processFileDependencies(
               file,
