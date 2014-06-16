@@ -164,10 +164,12 @@ public class Main {
 "   excluded from processing.\n" +
 " --unix-path If index listings should care for UNIX style output, " +
 "         default is: true\n" +
-" --exclude-file-path-patterns If this option is specified, each comma       \n" +
+" --exclude-file-path-patterns If this option is specified, each comma \n" +
 "   separated string will be tested with java regex method to match \n" +
 "   name of full file path. If any of strings match - file will be     \n" +
 "   excluded from processing.\n" +
+" --no-eol If set, and --index option is selected, no end of line will be \n" +
+"          added to the index list items.\n" +
 " --help,-h Shows this text                            \n" +
 "\n" +
 "" +
@@ -221,6 +223,7 @@ public class Main {
      */
     String filesIncluded = null;
     String out = null;
+    Boolean noEol = false;
     boolean info = false;
     boolean help = false;
     boolean relative = true;
@@ -296,6 +299,8 @@ public class Main {
           excludeFilePatterns =  args[i++ + 1];
         } else if (args[i].equals("--exclude-file-path-patterns")) {
           excludeFilePathPatterns = args[i++ + 1];
+        } else if (args[i].equals("--no-eol")) {
+          noEol = true;
         } else if (args[i].equals("--unix-path")) {
           unixPath = true;
         }
@@ -428,11 +433,15 @@ public class Main {
           log("Writing results...\n");
 
         if (generateIndex) {
+          String eol = "\n";
+          if (noEol) {
+            eol = "";
+          }
           String result = MiniProcessorHelper
                   .getPrefixScriptPathSuffixString(
                         paths,
                         prefix,
-                        suffix + "\n",
+                        suffix + eol,
                         withSourceBase,
                         unixPath);
 
