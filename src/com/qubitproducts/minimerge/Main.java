@@ -17,18 +17,18 @@
 
 package com.qubitproducts.minimerge;
 
+import com.qubitproducts.minimerge.MiniProcessor.LogLevel;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import com.qubitproducts.minimerge.MiniProcessor.LogLevel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -144,7 +144,7 @@ public class Main {
 "  -vv very verbose                                                    \n" +
 "  -v verbose                                                          \n" +
 "  -nd <process no dependencies in files? see: //= and //:include>     \n" +
-"  -dl <cut line contains strings(comma separated)>                    \n" +
+"  -dl <cut lines containing strings(comma separated)>                    \n" +
 "   example: /*D*/ or /*X*/ (defaults: /*D*/,//=,//:include,//= require)\n" +
 "  -df <file exclude patterns, defaults:                               \n" +
 "   /****!ignore!****/,////!ignore!////,##!ignore!## (comma separated) \n" +
@@ -170,11 +170,12 @@ public class Main {
 "   excluded from processing.\n" +
 " --no-eol If set, and --index option is selected, no end of line will be \n" +
 "          added to the index list items.\n" +
+" --cwd Specify current working directory. Default is current directory.\n" +
+"       It does not affect -o property. Use it when you cannot manage CWD.\n" +
 " --help,-h Shows this text                            \n" +
 "\n" +
 "" +
 "================================================================================";
-  
   
   public static final Logger LOGGER =
           Logger.getLogger(Main.class.getName());
@@ -213,6 +214,7 @@ public class Main {
   /**
    * Main function. See the usage blocks for args.
    * @param args the command line arguments
+   * @throws java.io.IOException
    */
   public static void main(String[] args) throws IOException {
     
@@ -242,7 +244,7 @@ public class Main {
     boolean withSourceBase = false;
     String excludeFilePatterns =  null;
     String excludeFilePathPatterns =  null;
-    
+    String cwd = null;
     MiniProcessor miniProcessor;
     
     try {
@@ -258,8 +260,8 @@ public class Main {
           parseOnlyFirstComments = true;
         } else if (args[i].equals("--source-base")) {
           String[] srcs = args[i++ + 1].split(",");
-          for (int j = 0; j < srcs.length; j++) {
-            String path = srcs[j].trim();
+          for (String src1 : srcs) {
+            String path = src1.trim();
             if (!path.equals("")) {
               sourceBase.add(path);
             }
@@ -297,6 +299,8 @@ public class Main {
           withSourceBase = true;
         } else if (args[i].equals("--exclude-file-patterns")) {
           excludeFilePatterns =  args[i++ + 1];
+        } else if (args[i].equals("--cwd")) {
+          cwd =  args[i++ + 1];
         } else if (args[i].equals("--exclude-file-path-patterns")) {
           excludeFilePathPatterns = args[i++ + 1];
         } else if (args[i].equals("--no-eol")) {
@@ -315,17 +319,15 @@ public class Main {
       src = ".";
     }
     
-    File srcFile = new File(src);
-    src = (srcFile).getAbsolutePath();
+    File srcFile = new File(cwd, src);
+    //src = (srcFile).getPath();
     
     //get relative from current and set source base
     if (sourceBase.isEmpty()) {
       if (srcFile.isFile()) {
-        String srceBase = srcFile.getCanonicalFile().getParent();
-        srceBase = srceBase.replace(new File(".").getCanonicalPath(), ".");
-        sourceBase.add(srceBase);
+        sourceBase.add(".");
       } else {
-        sourceBase.add(srcFile.getPath());
+        sourceBase.add(src);
       }
     }
     
@@ -372,6 +374,7 @@ public class Main {
               : "no, paths will be as defined in source base.")
         + "\n  --add-base: " + withSourceBase
         + "\n  --unix-path: " + unixPath
+        + "\n  --cwd: " + (cwd == null ? "." : cwd)
       + "\n\n");
     }
     
@@ -410,6 +413,7 @@ public class Main {
           miniProcessor
               .setFilePathExcludePatterns(excludeFilePathPatterns.split(","));
         }
+        miniProcessor.setCwd(cwd);
         miniProcessor.setIgnoreRequire(ignoreRJS);
         miniProcessor.setIgnores(linesToExclude.split(","));
         miniProcessor.setFileIgnores(filesToExclude.split(","));

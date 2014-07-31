@@ -188,7 +188,7 @@ public class MiniProcessorHelper {
         }
       }
     } else {
-          log(">>> File DOES NOT exist ! Some of js files may"
+          log(">>> File DOES NOT exist! Some of js files may"
              + " point to dependencies that do not match -s and"
              + " --js-deps-prefix  directory! Use -vv and see whats missing."
              + "\n    File failed to open: "

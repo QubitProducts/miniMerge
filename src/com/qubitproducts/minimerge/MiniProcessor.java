@@ -74,7 +74,7 @@ public class MiniProcessor {
       log(msg);
     }
   }
-  
+  private String cwd = null;
   boolean ignoreAllIgnores = false;//@TODO implement
   private String[] ignores = null;
   private String[] mergeOnly = null;
@@ -154,7 +154,7 @@ public class MiniProcessor {
   public void setSourceBase(String[] sourceBase) {
     List<String> srcs = new ArrayList<String>();
     for (int i = 0; i < sourceBase.length; i++) {
-      String srcBase = new File(sourceBase[i]).getPath();
+      String srcBase = new File(getCwd(), sourceBase[i]).getPath();
       srcBase = srcBase + File.separator;
       srcs.add(srcBase);
       logVeryVerbosive("Source No. " + i + " base set to: " + srcBase);
@@ -172,20 +172,20 @@ public class MiniProcessor {
    * returned and its base.
    * 
    * 
-   * @param String dependency to be checked
+   * @param dependencyPathString dependencyPathString to be checked
    * @return Array of strings with path at 0 index and
    * source base at 1 index if dependency exists or null otherwise.
    */
   public String[] getDependenciesPath(String dependencyPathString) {
     if (dependencyPathString != null) {
       String[] dirs = this.getSourceBase();
-      for (int i = 0; i < dirs.length; i++) {
-        String path = dirs[i] + dependencyPathString;
+      for (String dir : dirs) {
+        String path = dir + dependencyPathString;
         //@todo - adding virtual paths??? so fir single repo virtual path is listed?
         if (helpingMap.containsKey(path) ||
-                new File(path).exists()) {
+                new File(getCwd(), path).exists()) {
           helpingMap.put(path, null);
-          return new String[]{path, dirs[i]};
+          return new String[]{path, dir};
         }
       }
     }
@@ -218,6 +218,20 @@ public class MiniProcessor {
    */
   public void setFilePathExcludePatterns(String[] filePathExcludePatterns) {
     this.filePathExcludePatterns = filePathExcludePatterns;
+  }
+
+  /**
+   * @return the cwd
+   */
+  public String getCwd() {
+    return cwd;
+  }
+
+  /**
+   * @param cwd the cwd to set
+   */
+  public void setCwd(String cwd) {
+    this.cwd = cwd;
   }
 
   /**
@@ -263,7 +277,7 @@ public class MiniProcessor {
    * @param output java.lang.String path to output file
    */
   public MiniProcessor(String output) {
-    this.currentOutput = new File(output).getAbsolutePath();
+    this.currentOutput = new File(getCwd(), output).getAbsolutePath();
     this.ignores = IGNORE;
     this.mergeOnly = EXT_TO_MERGE;
     this.fromToIgnore = FROM_TO_IGNORE;
@@ -273,7 +287,7 @@ public class MiniProcessor {
    * Function listing recursively entire files tree. Similar to plain find in
    * UNIX.
    *
-   * @param startingFile java.io.File File specifying tree root node (mostly a
+   * @param file  java.io.File File specifying tree root node (mostly a
    * directory).
    * @return List list of files.
    */
@@ -284,11 +298,11 @@ public class MiniProcessor {
     } else {
       File[] files = file.listFiles();
       if (files != null) {
-        for (int i = 0; i < files.length; i++) {
-          if (files[i].isFile()) {
-            results.add(files[i]);
+        for (File file1 : files) {
+          if (file1.isFile()) {
+            results.add(file1);
           } else {
-            List<File> subdir = listFilesTree(files[i]);
+            List<File> subdir = listFilesTree(file1);
             results.addAll(subdir);
           }
         }
@@ -380,7 +394,7 @@ public class MiniProcessor {
    * @param checkLinesExcluded should merging check if lines are ignored
    * if true, this function will check each line if must be ignored by 
    * using function @see:isLineIgnored
-   * @param path to file where to write output
+   * @param outputFile to file where to write output
    * @throws IOException
    */
   public void mergeFilesToFile(
@@ -493,10 +507,10 @@ public class MiniProcessor {
             }
           } finally {
             writer.flush();
-            in.close();
+            if (in != null) in.close();
           }
         } else {
-          log(">>> File DOES NOT exist ! Some of File files may"
+          log(">>> File DOES NOT exist! Some of File files may"
                   + " point to dependencies that do not match -s and"
                   + " --file-deps-prefix  directory! Use -vv and see "
                   + "whats missing.\n    File failed to open: "
@@ -541,7 +555,7 @@ public class MiniProcessor {
     LinkedHashMap<String, String> paths = new LinkedHashMap<String, String>();
     LinkedHashMap<String, String> excludes = new LinkedHashMap<String, String>();
     
-    File startingFile = new File(path);
+    File startingFile = new File(getCwd(), path);
     
     List<File> files = MiniProcessor.listFilesTree(startingFile);
 
@@ -684,7 +698,7 @@ public class MiniProcessor {
                 + " base: " + dependencyPath[1]
                 + ",  (original text: " + dependencyPathString + ")");
 
-            File tmp = new File(dependencyPath[0]);
+            File tmp = new File(getCwd(), dependencyPath[0]);
             //do not analyse files already in paths
             if (!this.dependenciesChecked
                     .containsKey(tmp.getAbsolutePath())) {
@@ -804,7 +818,7 @@ public class MiniProcessor {
           File from) throws IOException {
     
     String tmp;
-    File srcBase = new File(dirBase); //or "." ?
+    File srcBase = new File(getCwd(), dirBase); //or "." ?
     //make sure we have straight paths (not a/b/../b/c for example)
     //all relative paths are versus src base
     srcBase = srcBase.getCanonicalFile();
@@ -863,7 +877,7 @@ public class MiniProcessor {
                     //  +"     Absolute: " + file.getAbsolutePath()
                     + "     From: "
                     + ((from != null) ? from.getPath()
-                    : "DIRECT LISTING - NOT AS DEPENDENCY"));
+                    : "Direct listing - not as a dependency."));
 
           }
         } else {
@@ -876,7 +890,7 @@ public class MiniProcessor {
                   //  +"     Absolute: " + file.getAbsolutePath()
                   + "     From: "
                   + ((from != null) ? from.getPath()
-                  : "DIRECT LISTING - NOT AS DEPENDENCY"));
+                  : "Direct listing - not as a dependency."));
         }
       }
     }
@@ -915,15 +929,12 @@ public class MiniProcessor {
     if (this.isCheckEveryLine()) {
       return true;
     }
-    if (line != null
+    return line != null
             && (line.startsWith("//")
             || line.startsWith("/*")
             || line.startsWith("#")
             || line.startsWith("<!")
-            || line.startsWith(";"))) {
-      return true;
-    }
-    return false;
+            || line.startsWith(";"));
   }
 
   /**
@@ -1060,7 +1071,7 @@ public class MiniProcessor {
   }
 
   /**
-   * @param ignoringIndents the ignoringIndents to set
+   * @param ignoreIndents the ignoringIndents to set
    */
   public void setIgnoringIndents(boolean ignoreIndents) {
     this.ignoringIndents = ignoreIndents;
