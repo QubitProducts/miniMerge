@@ -320,6 +320,10 @@ public class Main {
     }
     
     File srcFile = new File(cwd, src);
+    if (src.startsWith(File.separator)) {
+      srcFile = new File(src);
+    }
+    
     //src = (srcFile).getPath();
     
     //get relative from current and set source base

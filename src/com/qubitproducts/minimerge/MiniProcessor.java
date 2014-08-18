@@ -476,7 +476,7 @@ public class MiniProcessor {
       String dirBase = paths.get(item);
 
       logVeryVerbosive(">>> Dir base: " + dirBase);
-      dirBase = new File(dirBase).getAbsolutePath();
+      dirBase = new File(this.getCwd(), dirBase).getAbsolutePath();
       BufferedReader in = null;
       String topDir = getTopAbsoluteParent(dirBase);
       String pathPrefix;
@@ -486,7 +486,9 @@ public class MiniProcessor {
       } else {
         pathPrefix = dirBase;
       }
-      File file = new File(pathPrefix + File.separator + item);
+      
+      File file = new File(this.getCwd(), pathPrefix + File.separator + item);
+      
       if (file.getCanonicalFile().getAbsolutePath()
               .equals(this.getCurrentOutput())) {
         log("!!! File is the current output (EXCLUDING): "
@@ -721,7 +723,7 @@ public class MiniProcessor {
               log(this.getCurrentIndent()
                 + ">>> !!! Dependency file could not be found, either file does "
                 + "not exist or source base is incorrect! dependency line: "
-                + line);
+                + line + " : " + dependencyPathString);
             }
           }
           
