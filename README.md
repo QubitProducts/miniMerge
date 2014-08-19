@@ -153,9 +153,11 @@ block of lines and entire files. Please see, -dl, -dw and -df options.
 
   -dl is used to delete lines containing one of comma separated values passed to -dl, for example:
     -dl "console.log,console.debug" Will cause removing all lines from sources that contain console.log or console.debug strings.
+
   -dw is used to exclude entire blocks, it requires special format, for example:
     -dw "/~match/" will cause blocks starting with /match/ and ending with /~match/
     to be excluded from merge process. -dw, similary to -dl, accepts multiple entries.
+
   -df is used to excluded files. Any comma separated value that is contained by file will cause to exclude that file from merge process.
   This option applies also to --index option (unlike to -dl and -dw).
 
