@@ -112,3 +112,59 @@ file where process starts from. Please see usage list for more details - miniMer
 
 For even more examples, run java -jar MiniMerge.jar -h
 
+
+Example:
+
+  Merging all javascript from "src" directory and analysing dependencies:
+
+
+    java -jar MiniMerge.jar -s src -o output.js -i .js
+    
+  Command will cause fetching all files from src directory recursively.
+  If any path in files is defined as dependency:
+
+
+    //:include my/file.js
+
+  Then it is expected to be in my/file.js location, by default source base is a current execution location.
+  To change source base, add --source-base parameter, multiple values comma separated are allowed:
+
+
+    java -jar MiniMerge.jar -s src -o output.js -i .js --source-base "src,other"
+
+  Now, the dependency is expected to be in src/my/file.js or other/my/file.js
+  location. -i option defines matched string(s) at the end of file name (multiple options allowed, comma separated)
+
+  To list files only instead of merging their contents, add --index option.
+
+
+    java -jar MiniMerge.jar -s src -o output.js -i .js --source-base "src,other" --index
+
+  To see the output in console and also other useful information use -v (verbosive) or -vv (very verbosive) option.
+
+  To add prefix and suffix to listed index, add --prefix and --suffix arguments, like below:
+
+  
+    java -jar MiniMerge.jar -s src -o output.js -i .js --source-base "src,other" --index --prefix "<script src='" --suffix "'></script>"
+
+  During merging files process its very useful to "cut" out some of its contents, like
+debugging blocks, testing code etc., miniMerge has 3 levels of content filtering, single line level,
+block of lines and entire files. Please see, -dl, -dw and -df options.
+
+  -dl is used to delete lines containing one of comma separated values passed to -dl, for example:
+    -dl "console.log,console.debug" Will cause removing all lines from sources that contain console.log or console.debug strings.
+  -dw is used to exclude entire blocks, it requires special format, for example:
+    -dw "/~match/" will cause blocks starting with /match/ and ending with /~match/
+    to be excluded from merge process. -dw, similary to -dl, accepts multiple entries.
+  -df is used to excluded files. Any comma separated value that is contained by file will cause to exclude that file from merge process.
+  This option applies also to --index option (unlike to -dl and -dw).
+
+  To make miniMerge stop analyzing dependencies use -nd option.
+
+  To change current working directory for miniMerge, use --cwd option.
+
+  miniMerge by default use relative paths, to make it using absolute paths use 
+  --not-relative option
+
+
+
