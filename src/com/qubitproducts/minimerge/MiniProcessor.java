@@ -443,8 +443,10 @@ public class MiniProcessor {
    * @param path
    * @return
    */
-  public static String getTopAbsoluteParent(String path) {
-    File file = new File(new File(path + "anystring").getAbsolutePath());
+  public String getTopAbsoluteParent(String path) {
+    File file = new File(new File(
+            this.getCwd(), path + "anystring"
+    ).getAbsolutePath());
     String result = file.getParent();
     while (file.getParent() != null) {
       file = file.getParentFile();
@@ -475,10 +477,10 @@ public class MiniProcessor {
       String item = it.next();
       String dirBase = paths.get(item);
 
-      logVeryVerbosive(">>> Dir base: " + dirBase);
       dirBase = new File(this.getCwd(), dirBase).getAbsolutePath();
+      logVeryVerbosive(">>> Dir Base + Path : " + dirBase + " --> " + item);
       BufferedReader in = null;
-      String topDir = getTopAbsoluteParent(dirBase);
+      String topDir = this.getTopAbsoluteParent(dirBase);
       String pathPrefix;
       
       if (item.startsWith(topDir)) {
@@ -486,8 +488,8 @@ public class MiniProcessor {
       } else {
         pathPrefix = dirBase;
       }
-      
-      File file = new File(this.getCwd(), pathPrefix + File.separator + item);
+      //no Cwd here!
+      File file = new File(pathPrefix + File.separator + item);
       
       if (file.getCanonicalFile().getAbsolutePath()
               .equals(this.getCurrentOutput())) {
