@@ -381,9 +381,13 @@ public class MiniProcessor {
 
     StringWriter sw = new StringWriter();
     BufferedWriter bw = new BufferedWriter(sw);
-
-    MiniProcessorHelper.stripFromWraps(sr, bw, this.getFromToIgnore());
-    return sw.getBuffer();
+    try {
+      MiniProcessorHelper.stripFromWraps(sr, bw, this.getFromToIgnore());
+      StringBuffer ret = sw.getBuffer();
+      return ret;
+    } finally {
+      bw.close();
+    }
   }
 
   /**
@@ -405,7 +409,11 @@ public class MiniProcessor {
     this.setCurrentOutput((new File(outputFile)).getCanonicalFile().getAbsolutePath());
     BufferedWriter writer = new BufferedWriter(
             new FileWriter((new File(outputFile))));
-    mergeFiles(paths, checkLinesExcluded, writer);
+    try {
+      mergeFiles(paths, checkLinesExcluded, writer);
+    } finally {
+      writer.close();
+    }
     try {
       log(">>> Stripping file: " + outputFile);
       MiniProcessorHelper
