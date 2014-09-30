@@ -169,8 +169,6 @@ public class MiniProcessorHelper {
             log("Copying " + _file.getAbsolutePath() + " to "
                     + file.getAbsolutePath());
             copyTo(_file, file);
-            log("Cleaning. Deleting tmp file... " + _file.getAbsolutePath());
-            _file.delete();
           } catch (IOException e) {
             String msg = " Could not copy over the file nor delete tmp!"
                 + "\ntmp path:"+ _file.getAbsolutePath() + "\nreal: "
@@ -186,6 +184,11 @@ public class MiniProcessorHelper {
         if (in != null) {
           in.close();
         }
+        
+        log("Cleaning. Deleting tmp file... " + _file.getAbsolutePath());
+        
+        _file.delete();
+        _file = null;
       }
     } else {
           log(">>> File DOES NOT exist! Some of js files may"
