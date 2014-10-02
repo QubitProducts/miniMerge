@@ -139,6 +139,9 @@ public class Main {
 "  -ir ignore Require.js deps (default: false)                         \n" +
 "  --index It will ignore merging and generate prefix,suffix list      \n" +
 "  --prefix <prefix for index generation>                              \n" +
+"  --source-base comma separated source bases, if specified, all       \n" +
+"                dependencies will be searched with an order defined with\n" +
+"                this parameter.  Example: \"src, libs/src\"           \n" +
 "  --suffix <suffix for index generation>                              \n" +
 "  --not-relative <absolute paths index generation, default: false>    \n" +
 "  -vv very verbose                                                    \n" +
@@ -173,6 +176,9 @@ public class Main {
 " --cwd Specify current working directory. Default is current directory.\n" +
 "       It does not affect -o property. Use it when you cannot manage CWD.\n" +
 " --help,-h Shows this text                            \n" +
+" --no-file-exist-check if added, MM will NOT check if dependencies EXIST. \n" +
+"                   It also assumes that first class path is used ONLY - " +
+"                   first entry from --source-base will be used ONLY."+
 "\n" +
 "" +
 "================================================================================";
@@ -245,6 +251,7 @@ public class Main {
     String excludeFilePatterns =  null;
     String excludeFilePathPatterns =  null;
     String cwd = null;
+    boolean fsExistsOption = true;
     MiniProcessor miniProcessor;
     
     try {
@@ -307,6 +314,8 @@ public class Main {
           noEol = true;
         } else if (args[i].equals("--unix-path")) {
           unixPath = true;
+        } else if (args[i].equals("--no-file-exist-check")) {
+          fsExistsOption = false;
         }
       }
     } catch (NullPointerException ex) {
@@ -379,6 +388,7 @@ public class Main {
         + "\n  --add-base: " + withSourceBase
         + "\n  --unix-path: " + unixPath
         + "\n  --cwd: " + (cwd == null ? "." : cwd)
+        + "\n  --no-file-exist-check: " + !fsExistsOption
       + "\n\n");
     }
     
@@ -407,6 +417,7 @@ public class Main {
       try {
         
         miniProcessor = new MiniProcessor(out);
+        miniProcessor.setAssumeFilesExist(!fsExistsOption);
         miniProcessor.setSourceBase(sourceBase.toArray(new String[0]));
         miniProcessor.setMergeOnly(filesIncluded.split(","));
         if (excludeFilePatterns != null) {

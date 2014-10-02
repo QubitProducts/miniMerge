@@ -24,6 +24,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.logging.Level;
@@ -87,6 +88,28 @@ public class MiniProcessorHelper {
     writer.flush();
   }
 
+  public static void stripFromWrap(LineReader reader,
+                                   BufferedWriter writer,
+                                   String wrap) throws IOException {
+    String line;
+    String start = wrap.replaceFirst("~", "");
+    String end = wrap;
+    boolean ignore = false;
+    while ((line = reader.readLine()) != null) {
+      if (start.length() > 0 && line.contains(start)) {
+        ignore = true;
+      }
+      if (!ignore) {
+        writer.append(line);
+      }
+      if (end.length() > 0 && line.contains(end)) {
+        ignore = false;
+      }
+      writer.append("\n");
+    }
+    writer.flush();
+  }
+  
   /**
    * Function stripping from wraps string buffers.
    * String wrapping content must consist on ~ pattern,
@@ -142,7 +165,7 @@ public class MiniProcessorHelper {
    */
   public static void stripFileFromWrap(File file, String wrap)
           throws FileNotFoundException, IOException, Exception {
-    BufferedReader in = null;
+    LineReader in = null;
     BufferedWriter out = null;
     File _file = new File(file.getAbsolutePath() + "~");
     
@@ -150,8 +173,7 @@ public class MiniProcessorHelper {
       log("    Stripping from " + wrap);
       //log(">>> File DOES exist: " + file.getAbsolutePath());
       try {
-        FileReader fr = new FileReader(file);
-        in = new BufferedReader(fr);
+        in = new LineReader(file);
         FileWriter fw = new FileWriter(_file);
         out = new BufferedWriter(fw);
         stripFromWrap(in, out, wrap);
