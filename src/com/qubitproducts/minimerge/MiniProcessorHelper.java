@@ -25,7 +25,9 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -50,8 +52,32 @@ public class MiniProcessorHelper {
    */
   public static void stripFileFromWraps(File file, String[] wraps)
           throws FileNotFoundException, IOException, Exception {
-    for (int i = 0; i < wraps.length; i++) {
-      stripFileFromWrap(file, wraps[i]);
+    
+    if (wraps == null || wraps.length == 0) return;
+    
+    List<String> lines = new ArrayList<String>();
+    BufferedReader reader = new BufferedReader(new FileReader(file));
+    try {
+      String line = null;
+      while ((line = reader.readLine()) != null) {
+        lines.add(line);
+      }
+      for (int i = 0; i < wraps.length; i++) {
+        lines = stripFromWrap(lines, wraps[i]);
+      }
+    } finally {
+      if (reader != null) reader.close();
+    }
+    
+    BufferedWriter writer = 
+            new BufferedWriter(new FileWriter(file));
+    try {
+      for (int i = 0; i < lines.size(); i++) {
+        writer.write(lines.get(i) + "\n");
+      }
+      writer.flush();
+    } finally {
+      if (writer != null) writer.close();
     }
   }
 
@@ -88,6 +114,30 @@ public class MiniProcessorHelper {
     writer.flush();
   }
 
+  public static List<String> stripFromWrap(List<String> lines,
+                                   String wrap) throws IOException {
+    ArrayList<String> result = new ArrayList<String>();
+    String start = wrap.replaceFirst("~", "");
+    String end = wrap;
+    boolean ignore = false;
+    if (lines != null) for (String line : lines) {
+      if (start.length() > 0 && line.contains(start)) {
+        ignore = true;
+      }
+      if (!ignore) {
+        result.add(line);
+      } else {
+        result.add("");
+      }
+      if (end.length() > 0 && line.contains(end)) {
+        ignore = false;
+      }
+      //result.add("\n");
+    }
+    return result;
+  }
+
+  
   public static void stripFromWrap(LineReader reader,
                                    BufferedWriter writer,
                                    String wrap) throws IOException {
@@ -165,7 +215,7 @@ public class MiniProcessorHelper {
    */
   public static void stripFileFromWrap(File file, String wrap)
           throws FileNotFoundException, IOException, Exception {
-    LineReader in = null;
+    BufferedReader in = null;
     BufferedWriter out = null;
     File _file = new File(file.getAbsolutePath() + "~");
     
@@ -173,7 +223,7 @@ public class MiniProcessorHelper {
       log("    Stripping from " + wrap);
       //log(">>> File DOES exist: " + file.getAbsolutePath());
       try {
-        in = new LineReader(file);
+        in = new BufferedReader(new FileReader(file));
         FileWriter fw = new FileWriter(_file);
         out = new BufferedWriter(fw);
         stripFromWrap(in, out, wrap);
