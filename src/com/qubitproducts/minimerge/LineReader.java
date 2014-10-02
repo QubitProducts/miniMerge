@@ -24,13 +24,12 @@ public class LineReader  {
   private File file = null;
   private int lnum = 0;
   private LineReader lr = null;
-  
   private List<String> lines = new ArrayList<String>();
   
   private static HashMap<String, List> cache = new HashMap<String, List>();
   
   public static void clearCache () {
-    cache.clear();
+    cache = new HashMap<String, List>();
   }
   
   public LineReader(List<String> strings) {
@@ -38,42 +37,37 @@ public class LineReader  {
   }
 
   public LineReader(File file) throws FileNotFoundException {
-    if (cache.containsKey(file.getAbsolutePath())) {
-      lr = new LineReader(cache.get(file.getAbsolutePath()));
-      return;
+    List l = cache.get(file.getAbsolutePath());
+    if (l != null) {
+      lr = new LineReader(l);
+    } else {
+      fr = new BufferedReader(new FileReader(file));
+      this.file = file;
     }
-    fr = new BufferedReader(new FileReader(file));
-    this.file = file;
   }
   
   private String readCachedLine () {
+    if (lnum >= lines.size()) return null;
     return lines.get(lnum++);
   }
   
   public String readLine () throws IOException {
     if (lr != null) {
-      return lr.readCachedLine();
+        return lr.readCachedLine();
     }
     
     String line = fr.readLine();
-    lines.add(line);
+    if (line != null) {
+      lines.add(line);
+    } else {
+      //end of stream
+      cache.put(file.getAbsolutePath(), lines);
+    }
     return line;
   }
   
   public void close() throws IOException {
-    if (file != null) cache.put(file.getAbsolutePath(), lines);
     if (fr != null) fr.close();
   }
-}
 
-class Cluster {
-  ArrayList buf;
-  int lenght = 0;
-  int cluseterSize = 4096;
-
-  Cluster() {
-    this.buf = new ArrayList();
-    
-  }
-  
 }
