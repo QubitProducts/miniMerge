@@ -387,6 +387,7 @@ public class MiniProcessor {
       return ret;
     } finally {
       bw.close();
+      sw.close();
     }
   }
 
@@ -443,7 +444,9 @@ public class MiniProcessor {
           throws FileNotFoundException, IOException {
     StringWriter writer = new StringWriter();
     this.mergeFiles(paths, checkLinesExcluded, writer);
-    return writer.getBuffer();
+    StringBuffer buf = writer.getBuffer();
+    writer.close();
+    return buf;
   }
 
   /**
@@ -466,6 +469,8 @@ public class MiniProcessor {
   /**
    * Function merging files content by given paths map in the order 
    * defined by the map implementation.
+   * 
+   * This method DOES NOT close writer! Remember to close streams.
    * 
    * @param paths map
    * @param checkLinesExcluded should merging check if lines are ignored
