@@ -79,7 +79,6 @@ public class MiniProcessor {
   private String[] mergeOnly = null;
   private String[] sourceBase = {""};
   private String[] fromToIgnore = null;
-  private String currentOutput = null;
   private boolean ignoreRequire = false;
   private boolean checkEveryLine = true;
   private String currentIndent = "";
@@ -326,8 +325,7 @@ public class MiniProcessor {
    *
    * @param output java.lang.String path to output file
    */
-  public MiniProcessor(String output) {
-    this.currentOutput = new File(getCwd(), output).getAbsolutePath();
+  public MiniProcessor() {
     this.ignores = IGNORE;
     this.mergeOnly = EXT_TO_MERGE;
     this.fromToIgnore = FROM_TO_IGNORE;
@@ -423,9 +421,9 @@ public class MiniProcessor {
    * @throws FileNotFoundException
    * @throws IOException
    */
-  public StringBuffer mergeFiles(Map<String, String> paths)
+  public StringBuffer mergeFiles(Map<String, String> paths, String output)
           throws FileNotFoundException, IOException {
-    StringBuffer sb = this.mergeFiles(paths, false);
+    StringBuffer sb = this.mergeFiles(paths, false, output);
 
     BufferedReader sr = new BufferedReader(new StringReader(sb.toString()));
 
@@ -441,40 +439,39 @@ public class MiniProcessor {
     }
   }
 
-  /**
-   * Function merging files content by given paths map in the order 
-   * defined by the map implementation.
-   * 
-   * @param paths map
-   * @param checkLinesExcluded should merging check if lines are ignored
-   * if true, this function will check each line if must be ignored by 
-   * using function @see:isLineIgnored
-   * @param outputFile to file where to write output
-   * @throws IOException
-   */
-  public void mergeFilesToFile(
-                  Map<String, String> paths,
-                  boolean checkLinesExcluded,
-                  String outputFile
-          ) throws IOException {
-    this.setCurrentOutput((new File(outputFile)).getCanonicalFile().getAbsolutePath());
-    BufferedWriter writer = new BufferedWriter(
+    /**
+     * Function merging files content by given paths map in the order defined by
+     * the map implementation.
+     *
+     * @param paths map
+     * @param checkLinesExcluded should merging check if lines are ignored if
+     * true, this function will check each line if must be ignored by using
+     * function @see:isLineIgnored
+     * @param outputFile to file where to write output
+     * @throws IOException
+     */
+    public void mergeFilesToFile(
+        Map<String, String> paths,
+        boolean checkLinesExcluded,
+        String outputFile
+    ) throws IOException {
+        BufferedWriter writer = new BufferedWriter(
             new FileWriter((new File(outputFile))));
-    try {
-      mergeFiles(paths, checkLinesExcluded, writer);
-    } finally {
-      writer.close();
+        try {
+            mergeFiles(paths, checkLinesExcluded, writer, outputFile);
+        } finally {
+            writer.close();
+        }
+        try {
+            log(">>> Stripping file: " + outputFile);
+            MiniProcessorHelper
+                .stripFileFromWraps(new File(outputFile), this.getFromToIgnore());
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(MiniProcessor.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (Exception ex) {
+            Logger.getLogger(MiniProcessor.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
-    try {
-      log(">>> Stripping file: " + outputFile);
-      MiniProcessorHelper
-              .stripFileFromWraps(new File(outputFile), this.getFromToIgnore());
-    } catch (FileNotFoundException ex) {
-      Logger.getLogger(MiniProcessor.class.getName()).log(Level.SEVERE, null, ex);
-    } catch (Exception ex) {
-      Logger.getLogger(MiniProcessor.class.getName()).log(Level.SEVERE, null, ex);
-    }
-  }
 
   /**
    * Function merging files content by given paths map in the order 
@@ -490,10 +487,11 @@ public class MiniProcessor {
    */
   public StringBuffer mergeFiles(
               Map<String, String> paths,
-              boolean checkLinesExcluded)
+              boolean checkLinesExcluded,
+              String currentOutputToIgnore)
           throws FileNotFoundException, IOException {
     StringWriter writer = new StringWriter();
-    this.mergeFiles(paths, checkLinesExcluded, writer);
+    this.mergeFiles(paths, checkLinesExcluded, writer, currentOutputToIgnore);
     StringBuffer buf = writer.getBuffer();
     writer.close();
     return buf;
@@ -533,7 +531,8 @@ public class MiniProcessor {
   public void mergeFiles(
               Map<String, String> paths,
               boolean checkLinesExcluded,
-              Writer writer)
+              Writer writer,
+              String currentOutputToIgnore)
           throws FileNotFoundException, IOException {
     Iterator<String> it = paths.keySet().iterator();
     while (it.hasNext()) {
@@ -555,7 +554,7 @@ public class MiniProcessor {
       File file = new File(pathPrefix + File.separator + item);
       
       if (file.getCanonicalFile().getAbsolutePath()
-              .equals(this.getCurrentOutput())) {
+              .equals(currentOutputToIgnore)) {
         log("!!! File is the current output (EXCLUDING): "
                 + file.getAbsolutePath());
       } else {
@@ -592,7 +591,123 @@ public class MiniProcessor {
       }
     }
   }
+  //as 
+    public Map<String, StringBuilder> mergeFilesWithChunks(
+        Map<String, String> paths,
+        boolean checkLinesExcluded,
+        String outputName,
+        List<String> wraps,
+        String defaultExtension)
+        throws FileNotFoundException, IOException {
+        
+        if (defaultExtension == null) {
+            defaultExtension = "";
+        }
+        
+        Iterator<String> it = paths.keySet().iterator();
+                
+        Map<String, StringBuilder> allChunks =
+            new HashMap<String, StringBuilder>();
+        
+        while (it.hasNext()) {
+            String item = it.next();
+            String dirBase = paths.get(item);
 
+            dirBase = new File(this.getCwd(), dirBase).getAbsolutePath();
+            logVeryVerbosive(">>> Dir Base + Path : " + dirBase + " --> " + item);
+            LineReader in = null;
+            String topDir = this.getTopAbsoluteParent(dirBase);
+            String pathPrefix;
+
+            if (item.startsWith(topDir)) {
+                pathPrefix = "";
+            } else {
+                pathPrefix = dirBase;
+            }
+            //no Cwd here!
+            File file = new File(pathPrefix + File.separator + item);
+
+            if (file.getCanonicalFile().getAbsolutePath()
+                .equals(outputName)) {
+                log("!!! File is the current output (EXCLUDING): "
+                    + file.getAbsolutePath());
+            } else {
+        //if (this.checkIfExists(file)) {
+                //log(">>> File DOES exist: " + file.getAbsolutePath());
+                try {
+                    in = (new LineReader(file));
+                    
+                    Map<String, StringBuilder> chunks = 
+                        MiniProcessorHelper.getFileInChunks(in, wraps, defaultExtension);
+                    
+                    for (String key : chunks.keySet()) {
+                        StringBuilder builder = allChunks.get(key);
+                        if (builder == null) {
+                            builder = new StringBuilder();
+                            allChunks.put(key, builder);
+                        }
+                        builder.append(chunks.get(key));
+                    }
+                    
+                    log(">>> Merging: " + file.getAbsolutePath());
+                } catch (FileNotFoundException fnf) {
+                    log(">>> File DOES NOT exist! Some of File files may"
+                        + " point to dependencies that do not match -s and"
+                        + " --file-deps-prefix  directory! Use -vv and see "
+                        + "whats missing.\n    File failed to open: "
+                        + file.getAbsolutePath());
+                } finally {
+                    if (in != null) {
+                        in.close();
+                    }
+                }
+//        } else {
+//          log(">>> File DOES NOT exist! Some of File files may"
+//                  + " point to dependencies that do not match -s and"
+//                  + " --file-deps-prefix  directory! Use -vv and see "
+//                  + "whats missing.\n    File failed to open: "
+//                  + file.getAbsolutePath());
+//        }
+            }
+        }
+        
+        return allChunks;
+    }
+    
+    //chunks definitions must be valid
+    public void writeOutputs(
+        Map<String, StringBuilder> allChunks,
+        String outputName,
+        boolean clear) throws IOException {
+        if (clear) for (String chunkName : allChunks.keySet()) {
+                StringBuilder chunk = allChunks.get(chunkName);
+            String chunkRawName = chunkName.replaceAll("\\W", "");
+            String currentOutputName = outputName + "." + chunkRawName;
+            if (chunkRawName.equals("")) {
+                currentOutputName = outputName;
+            }
+            File f = new File(currentOutputName);
+            if (f.exists()){
+                f.delete();
+            }
+        }
+
+        for (String chunkName : allChunks.keySet ()) {
+                StringBuilder chunk = allChunks.get(chunkName);
+            String chunkRawName = chunkName.replaceAll("\\W", "");
+            String currentOutputName = outputName + "." + chunkRawName;
+            if (chunkRawName.equals("")) {
+                currentOutputName = outputName;
+            }
+            ///
+            BufferedWriter writer
+                = new BufferedWriter(new FileWriter(currentOutputName, true));
+            writer.append(chunk);
+            writer.flush();
+            writer.close();
+        }
+    }
+    
   /**
    * Function getting dependencies map by using file as input.
    * 
@@ -603,18 +718,22 @@ public class MiniProcessor {
    * @throws IOException
    */
   public LinkedHashMap<String, String>
-          getFileDependenciesFromFile(String path, boolean relative)
+          getFileDependenciesFromFile(
+              String path,
+              boolean relative,
+              String output)
           throws FileNotFoundException, IOException {
-    return getFilesListFromFile(path, relative, false);
+    return getFilesListFromFile(path, relative, false, output);
   }
 
   /**
    * Function getting dependencies map by using file as input.
    * 
-   * @param path path to root file
+   * @param path path to root file + base
    * @param relative if true return relative "as is" paths values
    * @param ignoreDependencies if true, do not search for dependencies 
    * (it has sense to use if input path is a directory)
+   * @param currentOutput
    * @return
    * @throws FileNotFoundException
    * @throws IOException
@@ -622,9 +741,10 @@ public class MiniProcessor {
   public LinkedHashMap<String, String> getFilesListFromFile(
           String path,
           boolean relative,
-          boolean ignoreDependencies)
+          boolean ignoreDependencies,
+          String currentOutput)
           throws FileNotFoundException, IOException {
-    
+    // path to file and base
     LinkedHashMap<String, String> paths = new LinkedHashMap<String, String>();
     LinkedHashMap<String, String> excludes = new LinkedHashMap<String, String>();
     
@@ -643,7 +763,7 @@ public class MiniProcessor {
     for (int i = 0; i < files.size(); i++) {
       if (!this.testIfFileIncluded(files.get(i))
               || files.get(i).getCanonicalFile().getAbsolutePath()
-              .equals(this.getCurrentOutput())) {
+              .equals(currentOutput)) {
         // do not include current startingFile
         log("Excluded: " + files.get(i).getName());
         files.remove(i--);
@@ -1073,20 +1193,6 @@ public class MiniProcessor {
    */
   public void setFromToIgnore(String[] fromToIgnore) {
     this.fromToIgnore = fromToIgnore;
-  }
-
-  /**
-   * @return the currentOutput
-   */
-  public String getCurrentOutput() {
-    return currentOutput;
-  }
-
-  /**
-   * @param currentOutput the currentOutput to set
-   */
-  public void setCurrentOutput(String currentOutput) {
-    this.currentOutput = currentOutput;
   }
 
   /**

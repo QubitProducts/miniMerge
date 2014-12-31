@@ -26,6 +26,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -114,6 +115,117 @@ public class MiniProcessorHelper {
     writer.flush();
   }
 
+    public static Map<String, StringBuilder> getFileInChunks(LineReader reader,
+        List<String> wraps, String defaultChunkName) throws IOException {
+        String tmp;
+        List<String> lines = new ArrayList<String>();
+        
+        while ((tmp = reader.readLine()) != null) {
+            lines.add(tmp);
+        }
+        
+        return getStringInChunks(lines, wraps, defaultChunkName);
+    }
+    
+    /**
+     * "" is a default output, when no wraps is 
+     * defined or blocks out of wraps.
+     * Chunks names returned are the definitions used to close the block.
+     * @param lines
+     * @param wraps
+     * @return
+     * @throws IOException 
+     */
+    public static Map<String, StringBuilder> getStringInChunks(List<String> lines,
+        List<String> wraps, String defaultExtension) throws IOException {
+        String tmp;
+        if (defaultExtension == null) {
+            defaultExtension = "";
+        }
+        //chunks are the xxx~namexxx elements
+        HashMap<String, StringBuilder> chunks = new HashMap<String, StringBuilder>();
+
+        StringBuilder defaultBuilder = new StringBuilder();
+        StringBuilder builder = new StringBuilder();
+        String endingWrap = null;
+
+        ArrayList<String[]> startingWraps = new ArrayList<String[]>();
+        for (String wrap : wraps) {
+            startingWraps.add(new String[]{
+                wrap.replaceFirst("~", ""),
+                wrap
+            });
+        }
+        
+        boolean isChunk = false;
+        int i = 1;
+        int size = lines.size();
+        for (String line : lines) {
+            if (line == null) {
+                continue;
+            }
+            
+            if (endingWrap == null) {
+                endingWrap = containsAny(line, startingWraps);
+            }
+            
+            if (endingWrap != null && line.contains(endingWrap)) {
+                StringBuilder current = chunks.get(endingWrap);
+                if (current == null) {
+                    current = new StringBuilder();
+                    chunks.put(endingWrap, current);
+                }
+                current.append(builder);
+                builder = new StringBuilder();
+                isChunk = false;
+                endingWrap = null;
+            } else {
+                //proceed normally
+                if (isChunk) {
+                    builder.append(line);
+                    if (i < size) {
+                        builder.append("\n");
+                    }
+                } else {
+                    if (endingWrap == null) {
+                        defaultBuilder.append(line);
+                    } else {
+                        isChunk = true;//from next line read builder
+                    }
+                }
+
+            }
+            //default content should persisit lines amount so is always added
+            if (i < size) {
+                defaultBuilder.append("\n");
+            }
+            i++;
+        }
+        
+        //flush unclosed ending
+        if (endingWrap != null) {
+            StringBuilder current = chunks.get(endingWrap);
+            if (current == null) {
+                current = new StringBuilder();
+                chunks.put(endingWrap, current);
+            }
+            current.append(builder);
+        }
+        
+        chunks.put(defaultExtension, defaultBuilder);
+        
+        return chunks;
+    }
+  
+    static private String containsAny(String line, List<String[]> strings) {
+        for (String[] string : strings) {
+            if (line.contains(string[0])) {
+                return string[1];
+            }
+        }
+        return null;
+    }
+    
   public static List<String> stripFromWrap(List<String> lines,
                                    String wrap) throws IOException {
     ArrayList<String> result = new ArrayList<String>();

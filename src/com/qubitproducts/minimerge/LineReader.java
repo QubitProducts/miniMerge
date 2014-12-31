@@ -18,56 +18,59 @@ import java.util.List;
  *
  * @author Peter Fronc <peter.fronc@qubitdigital.com>
  */
-public class LineReader  {
+public class LineReader {
 
-  BufferedReader fr = null;
-  private File file = null;
-  private int lnum = 0;
-  private LineReader lr = null;
-  private List<String> lines = new ArrayList<String>();
-  
-  private static HashMap<String, List> cache = new HashMap<String, List>();
-  
-  public static void clearCache () {
-    cache = new HashMap<String, List>();
-  }
-  
-  public LineReader(List<String> strings) {
-    lines = strings;
-  }
+    BufferedReader fileReader = null;
+    private File file = null;
+    private int lnum = 0;
+    private LineReader lineReader = null;
+    private List<String> lines = new ArrayList<String>();
 
-  public LineReader(File file) throws FileNotFoundException {
-    List l = cache.get(file.getAbsolutePath());
-    if (l != null) {
-      lr = new LineReader(l);
-    } else {
-      fr = new BufferedReader(new FileReader(file));
-      this.file = file;
-    }
-  }
-  
-  private String readCachedLine () {
-    if (lnum >= lines.size()) return null;
-    return lines.get(lnum++);
-  }
-  
-  public String readLine () throws IOException {
-    if (lr != null) {
-        return lr.readCachedLine();
-    }
-    
-    String line = fr.readLine();
-    if (line != null) {
-      lines.add(line);
-    } else {
-      //end of stream
-      cache.put(file.getAbsolutePath(), lines);
-    }
-    return line;
-  }
-  
-  public void close() throws IOException {
-    if (fr != null) fr.close();
-  }
+    private static HashMap<String, List<String>> cache = new HashMap<String, List<String>>();
 
+    public static void clearCache() {
+        cache = new HashMap<String, List<String>>();
+    }
+
+    public LineReader(List<String> strings) {
+        lines = strings;
+    }
+
+    public LineReader(File file) throws FileNotFoundException {
+        List<String> cachedLines = cache.get(file.getAbsolutePath());
+        if (cachedLines != null) {
+            lineReader = new LineReader(cachedLines);
+        } else {
+            fileReader = new BufferedReader(new FileReader(file));
+            this.file = file;
+        }
+    }
+
+    public String readLine() throws IOException {
+        if (lineReader != null) {
+            return lineReader.readCachedLine();
+        }
+
+        String line = fileReader.readLine();
+        if (line != null) {
+            lines.add(line);
+        } else {
+            //end of stream
+            cache.put(file.getAbsolutePath(), lines);
+        }
+        return line;
+    }
+
+    public void close() throws IOException {
+        if (fileReader != null) {
+            fileReader.close();
+        }
+    }
+
+    private String readCachedLine() {
+        if (lnum == lines.size()) {
+            return null;
+        }
+        return lines.get(lnum++);
+    }
 }

@@ -265,6 +265,7 @@ public class CompileJS {
         String cwd = null;
         boolean fsExistsOption = true;
         MiniProcessor miniProcessor;
+        HashMap<String, String> options = new HashMap<String, String>();
 
         try {
             for (int i = 0; i < args.length; i++) {
@@ -336,8 +337,14 @@ public class CompileJS {
                     unixPath = true;
                 } else if (args[i].equals("--no-file-exist-check")) {
                     fsExistsOption = false;
+                } else if (args[i].equals("--options")) {
+                    String[] opts = args[i+1].split(",");
+                    for (String opt : opts) {
+                        options.put(opt, "true");
+                    }
                 }
             }
+            options.put("single-html", "true");
         } catch (NullPointerException ex) {
             exit = true;
         } catch (IndexOutOfBoundsException ex) {
@@ -503,7 +510,7 @@ public class CompileJS {
                     }
                 } else {
                     if (true) {
-                        processPerExtensions(paths, miniProcessor, out);
+                        processPerExtensions(paths, miniProcessor, out, options);
                     } else {
                         miniProcessor.mergeFilesToFile(paths, true, out);
                     }
@@ -533,14 +540,16 @@ public class CompileJS {
     private static void processPerExtensions(
         Map<String, String> paths,
         MiniProcessor miniProcessor,
-        String out) throws IOException {
+        String out,
+        Map<String, String> options)
+        throws IOException {
         Map<String, String> other
             = new LinkedHashMap<String, String>();
         Map<String, Map<String, String>> extensionToNameMap
             = new LinkedHashMap<String, Map<String, String>>();
         for (String path : paths.keySet()) {
             try {
-                String ext = path.substring(path.lastIndexOf("."));
+                String ext = path.substring(path.lastIndexOf(".") + 1);
                 if (!"".equals(ext)) {
                     if (!extensionToNameMap.containsKey(ext)) {
                         extensionToNameMap.put(ext, new LinkedHashMap<String, String>());
@@ -554,29 +563,93 @@ public class CompileJS {
             }
         }
         
-        {//clear the stuff, remove all files to be written.
-            Set<String> extensions = extensionToNameMap.keySet();
-            for (String ext : extensions) {
-                File f = new File(out + "." + ext);
-                if (f.exists()) {
-                    f.delete();
-                }
-            }
-
-            for (String wrap : wraps) {
-                String ext =  wrap.replaceAll("\\W", ""); //same
-                File f = new File(out + "." + ext);
-                if (!extensions.contains(ext) && f.exists()) {
-                    f.delete();
-                }
-            }
-        }
+//        {//clear the stuff, remove all files to be written.
+//            Set<String> extensions = extensionToNameMap.keySet();
+//            for (String ext : extensions) {
+//                File f = new File(out + "." + ext);
+//                if (f.exists()) {
+//                    f.delete();
+//                }
+//            }
+//
+//            for (String wrap : wraps) {
+//                String ext =  wrap.replaceAll("\\W", ""); //same
+//                File f = new File(out + "." + ext);
+//                boolean alreadyDeleted = extensions.contains(ext);
+//                if (!alreadyDeleted && f.exists()) {
+//                    f.delete();
+//                }
+//            }
+//        }
+        
+        Map<String, StringBuilder> allchunks = new HashMap<String, StringBuilder>();
         
         for (String ext : extensionToNameMap.keySet()) {
             Map<String, String> filePaths = extensionToNameMap.get(ext);
-            miniProcessor.mergeFiles(filePaths, true, out + "." + ext);
+            String currentOut = out + "." + ext;
+//            BufferedWriter writer = new BufferedWriter(new FileWriter(
+//                currentOut, true
+//            ));
+            //miniProcessor.mergeFiles(filePaths, true, writer, currentOut);
+            //chunks returned are mapped by extensions, not output, so example:
+            // "": "defulaut output"
+            // "css": ".className {sdfgdasf} "
+            // "html": "<div/>"
+            Map<String, StringBuilder> chunks = 
+                miniProcessor.mergeFilesWithChunks(filePaths, true, currentOut, wraps, ext);
+            
+            mergeChunks(allchunks, chunks);
+            //miniProcessor.writeOutputs(chunks, currentOut, false);
+//            writer.flush();
+//            writer.close();
         }
         
-        miniProcessor.mergeFilesWithChunks(other, true, out, wraps, true);
+        if (options == null) {
+            miniProcessor.writeOutputs(allchunks, out, true);
+        } else if (options.containsKey("single-html")) {
+            StringBuilder js = allchunks.get("js");
+            StringBuilder css = allchunks.get("css");
+            StringBuilder html = allchunks.get("html");
+            StringBuilder index = new StringBuilder();
+            index.append("<html>\n");
+            index.append("<head>\n");
+            index.append("<style>\n");
+            index.append(css);
+            index.append("\n</style>\n");
+            index.append("</head>\n");
+            index.append("<body>\n");
+            index.append("<div class='templates'>\n");
+            index.append(html);
+            index.append("\n</div>\n");
+            index.append("</body>\n");
+            index.append("<script type='text/javascript'>\n");
+            index.append(js);
+            index.append("<--\n</script>\n");
+            index.append("</html>\n");
+            File output = new File(out + ".xhtml");
+            BufferedWriter writer = new BufferedWriter(new FileWriter(output));
+            writer.append(index);
+            writer.close();
+        } else {
+            miniProcessor.writeOutputs(allchunks, out, true);
+        }
+
+//        miniProcessor.mergeFilesWithChunks(other, true, out, wraps, true);
+    }
+    
+    static void mergeChunks (Map<String, StringBuilder> to,
+        Map<String, StringBuilder> from) {
+        for (String key : from.keySet()) {
+            StringBuilder fromS = from.get(key);
+            if (fromS != null) {
+                key = key.replaceAll("\\W+", "");
+                StringBuilder toS = to.get(key);
+                if (toS == null) {
+                    toS = new StringBuilder("");
+                    to.put(key, toS);
+                }
+                toS.append(fromS);
+            }
+        }
     }
 }

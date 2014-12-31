@@ -416,7 +416,9 @@ public class Main {
     if (out != null) {
       try {
         
-        miniProcessor = new MiniProcessor(out);
+        out = new File(cwd, out).getCanonicalFile().getAbsolutePath();
+          
+        miniProcessor = new MiniProcessor();
         miniProcessor.setAssumeFilesExist(!fsExistsOption);
         miniProcessor.setSourceBase(sourceBase.toArray(new String[0]));
         miniProcessor.setMergeOnly(filesIncluded.split(","));
@@ -447,7 +449,11 @@ public class Main {
         }
 
         Map<String, String> paths = miniProcessor
-                .getFilesListFromFile(src, relative, !dependencies);
+                .getFilesListFromFile(
+                    src,
+                    relative,
+                    !dependencies,
+                    out);
 
           log("Writing results...\n");
 
