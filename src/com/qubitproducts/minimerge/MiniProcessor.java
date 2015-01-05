@@ -16,6 +16,7 @@
  */
 package com.qubitproducts.minimerge;
 
+import static com.qubitproducts.minimerge.MiniProcessorHelper.chunkToExtension;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -282,6 +283,20 @@ public class MiniProcessor {
   public void setCacheFilesForMerge(boolean cacheFilesForMerge) {
     this.cacheFilesForMerge = cacheFilesForMerge;
   }
+
+    /**
+     * @return the processor
+     */
+    public Processor getProcessor() {
+        return processor;
+    }
+
+    /**
+     * @param processor the processor to set
+     */
+    public void setProcessor(Processor processor) {
+        this.processor = processor;
+    }
 
   /**
    * Log levels, Deafault and fine are {System.out.println} based. FINE is java
@@ -591,8 +606,10 @@ public class MiniProcessor {
       }
     }
   }
-  //as 
-    public Map<String, StringBuilder> mergeFilesWithChunks(
+
+  private Processor processor = null;
+  
+  public Map<String, StringBuilder> mergeFilesWithChunks(
         Map<String, String> paths,
         boolean checkLinesExcluded,
         String outputName,
@@ -637,16 +654,21 @@ public class MiniProcessor {
                 try {
                     in = (new LineReader(file));
                     
-                    Map<String, StringBuilder> chunks = 
+                    List<Object[]> chunks = 
                         MiniProcessorHelper.getFileInChunks(in, wraps, defaultExtension);
                     
-                    for (String key : chunks.keySet()) {
+                    if (this.processor != null) {
+                        processor.process(chunks);
+                    }
+                    
+                    for (Object[] chunk : chunks) {
+                        String key = chunkToExtension((String) chunk[0]);
                         StringBuilder builder = allChunks.get(key);
                         if (builder == null) {
                             builder = new StringBuilder();
                             allChunks.put(key, builder);
                         }
-                        builder.append(chunks.get(key));
+                        builder.append((StringBuilder) chunk[1]);
                     }
                     
                     log(">>> Merging: " + file.getAbsolutePath());
@@ -681,7 +703,7 @@ public class MiniProcessor {
         boolean clear) throws IOException {
         if (clear) for (String chunkName : allChunks.keySet()) {
                 StringBuilder chunk = allChunks.get(chunkName);
-            String chunkRawName = chunkName.replaceAll("\\W", "");
+            String chunkRawName = chunkToExtension(chunkName);
             String currentOutputName = outputName + "." + chunkRawName;
             if (chunkRawName.equals("")) {
                 currentOutputName = outputName;
@@ -694,7 +716,7 @@ public class MiniProcessor {
 
         for (String chunkName : allChunks.keySet ()) {
                 StringBuilder chunk = allChunks.get(chunkName);
-            String chunkRawName = chunkName.replaceAll("\\W", "");
+            String chunkRawName = chunkToExtension(chunkName);
             String currentOutputName = outputName + "." + chunkRawName;
             if (chunkRawName.equals("")) {
                 currentOutputName = outputName;

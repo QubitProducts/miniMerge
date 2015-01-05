@@ -17,6 +17,7 @@
 package com.qubitproducts.minimerge;
 
 import com.qubitproducts.minimerge.MiniProcessor.LogLevel;
+import static com.qubitproducts.minimerge.MiniProcessorHelper.chunkToExtension;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -29,7 +30,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -178,12 +178,18 @@ public class CompileJS {
         + "          added to the index list items.\n"
         + " --cwd Specify current working directory. Default is current directory.\n"
         + "       It does not affect -o property. Use it when you cannot manage CWD.\n"
-        + " --help,-h Shows this text                            \n"
         + " --no-file-exist-check if added, MM will NOT check if dependencies EXIST. \n"
         + "                   It also assumes that first class path is used ONLY - "
         + "                   first entry from --source-base will be used ONLY."
         + "\n"
-        + ""
+        + " --chunk-extensions array, comma separated custom extensions used for wraps.\n"
+        + "   Default: /*~css*/,/*~html*/,/*~template*/  Those wrap definitions are used to take out\n"
+        + "   chunks of file outside to output with extension defined by wrap keyword.\n"
+        + "   For example: /*~c-wrap*/ chunk will be written to default OUTPUT \n"
+        + "   (-o option) plus c-wrap extension. Its advised to use alphanumeric\n"
+        + " characters and dash and underscore and dot for custom wraps.\n"
+        + " --help,-h Shows this text                                              \n"
+        + " --help,-h Shows this text                                              \n"
         + "================================================================================";
 
     public static final Logger LOGGER
@@ -219,7 +225,6 @@ public class CompileJS {
     public static void printUsage() {
         ps.print(USAGE);
     }
-
     /**
      * Main function. See the usage blocks for args.
      *
@@ -264,6 +269,12 @@ public class CompileJS {
         String excludeFilePathPatterns = null;
         String cwd = null;
         boolean fsExistsOption = true;
+        boolean perExtensions = true;
+        List<String> defaltWraps = Arrays.asList(new String[]{
+            "/*~css*/",
+            "/*~html*/",
+            "/*~template*/"
+        });
         MiniProcessor miniProcessor;
         HashMap<String, String> options = new HashMap<String, String>();
 
@@ -338,13 +349,19 @@ public class CompileJS {
                 } else if (args[i].equals("--no-file-exist-check")) {
                     fsExistsOption = false;
                 } else if (args[i].equals("--options")) {
-                    String[] opts = args[i+1].split(",");
+                    String[] opts = args[i++ + 1].split(",");
                     for (String opt : opts) {
                         options.put(opt, "true");
                     }
+                } else if (args[i].equals("-mm-mode")) {
+                    perExtensions = false;
+                } else if (args[i].equals("--chunk-extensions")) {
+                    defaltWraps = Arrays.asList(args[i++ + 1].split(","));
                 }
+//                else if (args[i].equals("--html-output")) {
+//                    options.put("html-output", "true");
+//                }
             }
-            options.put("single-html", "true");
         } catch (NullPointerException ex) {
             exit = true;
         } catch (IndexOutOfBoundsException ex) {
@@ -509,8 +526,18 @@ public class CompileJS {
                         }
                     }
                 } else {
-                    if (true) {
-                        processPerExtensions(paths, miniProcessor, out, options);
+                    if (perExtensions) {
+                        miniProcessor.setProcessor(new JSTemplateProcessor(
+                            "    \"",//var template = [\n    \"",
+                            "\"\n",//\\n\"\n].join('');\n",
+                            "\\n\",\n    \""
+                        ));
+                        processPerExtensions(
+                            paths,
+                            miniProcessor,
+                            out,
+                            options,
+                            defaltWraps);
                     } else {
                         miniProcessor.mergeFilesToFile(paths, true, out);
                     }
@@ -532,16 +559,13 @@ public class CompileJS {
             }
         }
     }
-
-    static List<String> wraps = Arrays.asList(new String[]{
-        "/*~css*/",
-        "/*~html*/"});
     
     private static void processPerExtensions(
         Map<String, String> paths,
         MiniProcessor miniProcessor,
         String out,
-        Map<String, String> options)
+        Map<String, String> options,
+        List<String> wraps)
         throws IOException {
         Map<String, String> other
             = new LinkedHashMap<String, String>();
@@ -563,78 +587,69 @@ public class CompileJS {
             }
         }
         
-//        {//clear the stuff, remove all files to be written.
-//            Set<String> extensions = extensionToNameMap.keySet();
-//            for (String ext : extensions) {
-//                File f = new File(out + "." + ext);
-//                if (f.exists()) {
-//                    f.delete();
-//                }
-//            }
-//
-//            for (String wrap : wraps) {
-//                String ext =  wrap.replaceAll("\\W", ""); //same
-//                File f = new File(out + "." + ext);
-//                boolean alreadyDeleted = extensions.contains(ext);
-//                if (!alreadyDeleted && f.exists()) {
-//                    f.delete();
-//                }
-//            }
-//        }
-        
         Map<String, StringBuilder> allchunks = new HashMap<String, StringBuilder>();
+        
+        boolean noWraps = wraps == null;
         
         for (String ext : extensionToNameMap.keySet()) {
             Map<String, String> filePaths = extensionToNameMap.get(ext);
             String currentOut = out + "." + ext;
-//            BufferedWriter writer = new BufferedWriter(new FileWriter(
-//                currentOut, true
-//            ));
-            //miniProcessor.mergeFiles(filePaths, true, writer, currentOut);
-            //chunks returned are mapped by extensions, not output, so example:
-            // "": "defulaut output"
-            // "css": ".className {sdfgdasf} "
-            // "html": "<div/>"
-            Map<String, StringBuilder> chunks = 
-                miniProcessor.mergeFilesWithChunks(filePaths, true, currentOut, wraps, ext);
-            
-            mergeChunks(allchunks, chunks);
-            //miniProcessor.writeOutputs(chunks, currentOut, false);
-//            writer.flush();
-//            writer.close();
+            if (noWraps) {
+                BufferedWriter writer = new BufferedWriter(new FileWriter(
+                    currentOut, true
+                ));
+                miniProcessor.mergeFiles(filePaths, true, writer, currentOut);
+                writer.flush();
+                writer.close();
+            } else {
+                //chunks returned are mapped by extensions, not output, so example:
+                // "": "defulaut output"
+                // "css": ".className {sdfgdasf} "
+                // "html": "<div/>"
+                Map<String, StringBuilder> chunks = 
+                    miniProcessor.mergeFilesWithChunks(
+                        filePaths,
+                        true,
+                        currentOut,
+                        wraps,
+                        ext);
+                mergeChunks(allchunks, chunks);
+            }
         }
-        
-        if (options == null) {
-            miniProcessor.writeOutputs(allchunks, out, true);
-        } else if (options.containsKey("single-html")) {
-            StringBuilder js = allchunks.get("js");
-            StringBuilder css = allchunks.get("css");
-            StringBuilder html = allchunks.get("html");
-            StringBuilder index = new StringBuilder();
-            index.append("<html>\n");
-            index.append("<head>\n");
-            index.append("<style>\n");
-            index.append(css);
-            index.append("\n</style>\n");
-            index.append("</head>\n");
-            index.append("<body>\n");
-            index.append("<div class='templates'>\n");
-            index.append(html);
-            index.append("\n</div>\n");
-            index.append("</body>\n");
-            index.append("<script type='text/javascript'>\n");
-            index.append(js);
-            index.append("<--\n</script>\n");
-            index.append("</html>\n");
-            File output = new File(out + ".xhtml");
-            BufferedWriter writer = new BufferedWriter(new FileWriter(output));
-            writer.append(index);
-            writer.close();
-        } else {
-            miniProcessor.writeOutputs(allchunks, out, true);
+        if (!noWraps) {
+            if (options == null) {
+                miniProcessor.writeOutputs(allchunks, out, true);
+            } else if (options.containsKey("html-output")) {
+                StringBuilder js = allchunks.get("js");
+                StringBuilder css = allchunks.get("css");
+                StringBuilder html = allchunks.get("html");
+                StringBuilder index = new StringBuilder();
+                index.append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n");
+                index.append("\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n");
+                index.append("<html xmlns=\"http://www.w3.org/1999/xhtml\">\n");
+                index.append("<head>\n");
+                index.append("<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\" />");
+                index.append("<style>\n");
+                index.append(css == null ? "" : css);
+                index.append("\n</style>\n");
+                index.append("</head>\n");
+                index.append("<body>\n");
+                index.append("<div class='templates'>\n");
+                index.append(html == null ? "" : html);
+                index.append("\n</div>\n");
+                index.append("<script type=\"text/javascript\">\n//<![CDATA[\n");
+                index.append(js == null ? "" : js);
+                index.append("\n//]]>\n</script>\n");
+                index.append("</body>\n");
+                index.append("</html>");
+                File output = new File(out + ".xhtml");
+                BufferedWriter writer = new BufferedWriter(new FileWriter(output));
+                writer.append(index);
+                writer.close();
+            } else {
+                miniProcessor.writeOutputs(allchunks, out, true);
+            }
         }
-
-//        miniProcessor.mergeFilesWithChunks(other, true, out, wraps, true);
     }
     
     static void mergeChunks (Map<String, StringBuilder> to,
@@ -642,7 +657,7 @@ public class CompileJS {
         for (String key : from.keySet()) {
             StringBuilder fromS = from.get(key);
             if (fromS != null) {
-                key = key.replaceAll("\\W+", "");
+                key = chunkToExtension(key);
                 StringBuilder toS = to.get(key);
                 if (toS == null) {
                     toS = new StringBuilder("");

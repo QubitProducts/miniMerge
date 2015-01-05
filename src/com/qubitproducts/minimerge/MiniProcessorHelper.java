@@ -115,7 +115,7 @@ public class MiniProcessorHelper {
     writer.flush();
   }
 
-    public static Map<String, StringBuilder> getFileInChunks(LineReader reader,
+    public static List<Object[]> getFileInChunks(LineReader reader,
         List<String> wraps, String defaultChunkName) throws IOException {
         String tmp;
         List<String> lines = new ArrayList<String>();
@@ -124,7 +124,17 @@ public class MiniProcessorHelper {
             lines.add(tmp);
         }
         
-        return getStringInChunks(lines, wraps, defaultChunkName);
+        List<Object[]> ret = getStringInChunks(lines, wraps, defaultChunkName);
+        
+        return ret;
+    }
+    
+    public static String chunkToExtension(String in) {
+        if (in == null) {
+            return null;
+        }
+        //dash removed as used in html comments
+        return in.replaceAll("[^a-zA-Z0-9_\\\\.]", "");
     }
     
     /**
@@ -133,17 +143,21 @@ public class MiniProcessorHelper {
      * Chunks names returned are the definitions used to close the block.
      * @param lines
      * @param wraps
-     * @return
+     * @param defaultExtension
+     * @return Array of Object[String, StringBuilder]
      * @throws IOException 
      */
-    public static Map<String, StringBuilder> getStringInChunks(List<String> lines,
-        List<String> wraps, String defaultExtension) throws IOException {
+    public static List<Object[]> getStringInChunks(
+                List<String> lines,
+                List<String> wraps,
+                String defaultExtension)
+            throws IOException {
         String tmp;
         if (defaultExtension == null) {
             defaultExtension = "";
         }
         //chunks are the xxx~namexxx elements
-        HashMap<String, StringBuilder> chunks = new HashMap<String, StringBuilder>();
+        ArrayList<Object[]> chunks = new ArrayList<Object[]>();
 
         StringBuilder defaultBuilder = new StringBuilder();
         StringBuilder builder = new StringBuilder();
@@ -170,12 +184,7 @@ public class MiniProcessorHelper {
             }
             
             if (endingWrap != null && line.contains(endingWrap)) {
-                StringBuilder current = chunks.get(endingWrap);
-                if (current == null) {
-                    current = new StringBuilder();
-                    chunks.put(endingWrap, current);
-                }
-                current.append(builder);
+                chunks.add(new Object[]{endingWrap, builder});
                 builder = new StringBuilder();
                 isChunk = false;
                 endingWrap = null;
@@ -189,31 +198,26 @@ public class MiniProcessorHelper {
                 } else {
                     if (endingWrap == null) {
                         defaultBuilder.append(line);
+                        if (i < size) {
+                            defaultBuilder.append("\n");
+                        }
                     } else {
                         isChunk = true;//from next line read builder
+                        chunks.add(new Object[]{defaultExtension, defaultBuilder});
+                        defaultBuilder = new StringBuilder();
                     }
                 }
 
-            }
-            //default content should persisit lines amount so is always added
-            if (i < size) {
-                defaultBuilder.append("\n");
             }
             i++;
         }
         
         //flush unclosed ending
         if (endingWrap != null) {
-            StringBuilder current = chunks.get(endingWrap);
-            if (current == null) {
-                current = new StringBuilder();
-                chunks.put(endingWrap, current);
-            }
-            current.append(builder);
+            chunks.add(new Object[]{endingWrap, builder});
+        } else {
+            chunks.add(new Object[]{defaultExtension, defaultBuilder});
         }
-        
-        chunks.put(defaultExtension, defaultBuilder);
-        
         return chunks;
     }
   
