@@ -1,12 +1,12 @@
 /*
  *  Copyright 2013 @ QubitProducts.com
  *
- *  MiniMerge is free software: you can redistribute it and/or modify
+ *  CompileJS is free software: you can redistribute it and/or modify
  *  it under the terms of the Lesser GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  MiniMerge is distributed in the hope that it will be useful,
+ *  CompileJS is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  Lesser GNU General Public License for more details.
@@ -43,7 +43,7 @@ public class CompileJS {
         + "\n"
         + "Example:\n"
         + "\n"
-        + "java -jar MiniMerge.jar -o out.js --info -v -s js/app/Main.js  --source-base "
+        + "java -jar compilejs.jar -o out.js --info -v -s js/app/Main.js  --source-base "
         + "js/  --index --prefix \">>> \" --suffix \" <<<\"  -i .js,.jss  "
         + "  -dl \"Log.FINE\"\n"
         + "\n"
@@ -61,17 +61,21 @@ public class CompileJS {
         + "\n"
         + "Please use --help or -h for more information.";
 
-    public static String USAGE = "MiniMerge \n"
+    public static String USAGE = "CompileJS \n"
         + "================================================================================\n"
         + "\n"
         + "Summary\n"
         + "\n"
-        + "MiniMerge allows easy files merging with its dependencies in a defined order.\n"
-        + "It is lightweight and written purely in java.\n"
+        + "CompileJS is a tool supporting OO JavaScript. It has been created to\n"
+        + "allow developers to include dependencies and CSS and HTML content in \n"
+        + "JS files. CompileJs extends MiniMerge functionality with per-extension\n"
+        + "dependencies recognition (CSS, HTML). It also supports embeded string\n"
+        + "templates for javascript, so HTML fragments can be in unchanged form.\n"
+        + "CompileJS is lightweight and written purely in java.\n"
         + "Program is a great concatenating tool, especially when used for web development \n"
         + "build systems. It allows simply and efficiently merging JS or CSS dependencies \n"
         + "trees into single output files. Debug web pages can be easily created by using \n"
-        + "MiniMerge listing page options and release files can be optimized by using \n"
+        + "CompileJS listing page options and release files can be optimized by using \n"
         + "powerful excluding patterns.\n"
         + "\n"
         + "================================================================================\n"
@@ -125,7 +129,7 @@ public class CompileJS {
         + "option - in addition, you can use prefix and suffix for each file path in the\n"
         + "list to be prefixed/suffixed. Files list is same ordered like in merge process.\n"
         + "\n"
-        + "When using MiniMerge it is strongly recommended to specify source base and the\n"
+        + "When using CompileJS it is strongly recommended to specify source base and the\n"
         + "file where process starts from. Please see usage list for more details.\n"
         + "\n"
         + "================================================================================\n"
@@ -183,7 +187,7 @@ public class CompileJS {
         + "                   first entry from --source-base will be used ONLY."
         + "\n"
         + " --chunk-extensions array, comma separated custom extensions used for wraps.\n"
-        + "   Default: /*~css*/,/*~html*/,/*~template*/  Those wrap definitions are used to take out\n"
+        + "   Default: /*~css*/,/*~html*/,/*~js.template*/  Those wrap definitions are used to take out\n"
         + "   chunks of file outside to output with extension defined by wrap keyword.\n"
         + "   For example: /*~c-wrap*/ chunk will be written to default OUTPUT \n"
         + "   (-o option) plus c-wrap extension. Its advised to use alphanumeric\n"
@@ -254,30 +258,35 @@ public class CompileJS {
         boolean unixPath = true;
         boolean dependencies = true;
         boolean parseOnlyFirstComments = false;
-        String prefix = "<script type=\"text/javascript\" src=\"";
-        String suffix = "\"></script>";
+        
+        String defaultPrefix = "<script type=\"text/javascript\" src=\"";
+        String defaultSuffix = "\"></script>";
+        
         Map<String, String> prefixPerExtension = new HashMap<String, String>();
         prefixPerExtension.put("css", "<link rel=\"stylesheet\" href=\"");
-        prefixPerExtension.put("js", prefix);
+        prefixPerExtension.put("js", defaultPrefix);
+        
         Map<String, String> suffixPerExtension = new HashMap<String, String>();
-        suffixPerExtension.put("css", ">");
-        suffixPerExtension.put("js", suffix);
-        boolean compilejsMode = true;
-        boolean outputPerExtension = true;
+        suffixPerExtension.put("css", ">\n");
+        suffixPerExtension.put("js", defaultSuffix + "\n"); //clean up defaults
+        
         boolean withSourceBase = false;
         String excludeFilePatterns = null;
         String excludeFilePathPatterns = null;
         String cwd = null;
         boolean fsExistsOption = true;
         boolean perExtensions = true;
+        
         List<String> defaltWraps = Arrays.asList(new String[]{
             "/*~css*/",
             "/*~html*/",
-            "/*~template*/"
+            "/*~js.template*/"
         });
+
         MiniProcessor miniProcessor;
         HashMap<String, String> options = new HashMap<String, String>();
-
+        String eol = "\n";
+        
         try {
             for (int i = 0; i < args.length; i++) {
                 if (args[i].equals("-i")) {
@@ -312,9 +321,9 @@ public class CompileJS {
                 } else if (args[i].equals("--index")) {
                     generateIndex = true;
                 } else if (args[i].equals("--prefix")) {
-                    prefix = args[i++ + 1];
+                    defaultPrefix = args[i++ + 1];
                 } else if (args[i].equals("--suffix")) {
-                    suffix = args[i++ + 1];
+                    defaultSuffix = args[i++ + 1];
                 } else if (args[i].startsWith("--prefix-")) {
                     prefixPerExtension.put(
                         args[i].replaceFirst("--prefix-", ""),
@@ -322,7 +331,7 @@ public class CompileJS {
                 } else if (args[i].startsWith("--suffix-")) {
                     suffixPerExtension.put(
                         args[i].replaceFirst("--suffix-", ""),
-                        args[i + 1]);
+                        args[i + 1] + eol);
                 } else if (args[i].equals("--not-relative")) {
                     relative = false;
                 } else if (args[i].equals("-vv")) {
@@ -344,6 +353,9 @@ public class CompileJS {
                     excludeFilePathPatterns = args[i++ + 1];
                 } else if (args[i].equals("--no-eol")) {
                     noEol = true;
+                    if (noEol) { //move it around...
+                        eol = "";
+                    }
                 } else if (args[i].equals("--unix-path")) {
                     unixPath = true;
                 } else if (args[i].equals("--no-file-exist-check")) {
@@ -368,6 +380,10 @@ public class CompileJS {
             exit = true;
         }
 
+        //put defaults
+        prefixPerExtension.put("", defaultPrefix);
+        suffixPerExtension.put("", defaultSuffix + eol);
+        
         if (src == null) {
             src = ".";
         }
@@ -377,8 +393,6 @@ public class CompileJS {
             srcFile = new File(src);
         }
 
-    //src = (srcFile).getPath();
-        //get relative from current and set source base
         if (sourceBase.isEmpty()) {
             if (srcFile.isFile()) {
                 sourceBase.add(".");
@@ -402,12 +416,11 @@ public class CompileJS {
         if (wrapsToExclude == null) {
             wrapsToExclude = "/*~debug*/,/*~*/";
         }
-
+        
         if (info) {
             ps.println(
                 " miniMERGE config selected:");
-            ps.println(
-                "  -i  Included file types: " + filesIncluded
+            ps.println("  -i  Included file types: " + filesIncluded
                 + "\n  -o  Output: "
                 + (out == null ? "null" : (new File(out)).getAbsolutePath())
                 + "\n  -s  Src dir: " + src
@@ -424,8 +437,8 @@ public class CompileJS {
                 + (generateIndex
                     ? " yes (Generate paths index only (no files merging).)"
                     : " no (Merge files.)")
-                + "\n  --prefix (Index paths prefix): " + prefix
-                + "\n  --suffix (Index paths suffix): " + suffix
+                + "\n  --prefix (Index paths prefix): " + defaultPrefix
+                + "\n  --suffix (Index paths suffix): " + defaultSuffix
                 + "\n  --not-relative: " + (relative ? "yes, paths will be absolute"
                     : "no, paths will be as defined in source base.")
                 + "\n  --add-base: " + withSourceBase
@@ -499,17 +512,14 @@ public class CompileJS {
                 log("Writing results...\n");
 
                 if (generateIndex) {
-                    String eol = "\n";
-                    if (noEol) {
-                        eol = "";
-                    }
                     String result = MiniProcessorHelper
                         .getPrefixScriptPathSuffixString(
                             paths,
-                            prefix,
-                            suffix + eol,
+                            prefixPerExtension,
+                            suffixPerExtension,
                             withSourceBase,
-                            unixPath);
+                            unixPath
+                            );
 
                     BufferedWriter writer = null;
 
@@ -527,10 +537,15 @@ public class CompileJS {
                     }
                 } else {
                     if (perExtensions) {
+                        
+                        String preTemplate = "    \"";//var template = [\n    \"",
+                        String medium = "\"\n";//\\n\"\n].join('');\n",
+                        String sufTemplate = "\\n\",\n    \"";//var template = [\n    \"",
+                        
                         miniProcessor.setProcessor(new JSTemplateProcessor(
-                            "    \"",//var template = [\n    \"",
-                            "\"\n",//\\n\"\n].join('');\n",
-                            "\\n\",\n    \""
+                            preTemplate,
+                            medium,
+                            sufTemplate
                         ));
                         processPerExtensions(
                             paths,
@@ -571,15 +586,19 @@ public class CompileJS {
             = new LinkedHashMap<String, String>();
         Map<String, Map<String, String>> extensionToNameMap
             = new LinkedHashMap<String, Map<String, String>>();
+        
         for (String path : paths.keySet()) {
             try {
                 String ext = path.substring(path.lastIndexOf(".") + 1);
                 if (!"".equals(ext)) {
+                    //init
                     if (!extensionToNameMap.containsKey(ext)) {
                         extensionToNameMap.put(ext, new LinkedHashMap<String, String>());
                     }
+                    // collect ext => path:src-base
                     extensionToNameMap.get(ext).put(path, paths.get(path));
                 } else {
+                    //default collection
                     other.put(path, paths.get(path));
                 }
             } catch (IndexOutOfBoundsException e) {

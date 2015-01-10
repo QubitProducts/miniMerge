@@ -702,7 +702,6 @@ public class MiniProcessor {
         String outputName,
         boolean clear) throws IOException {
         if (clear) for (String chunkName : allChunks.keySet()) {
-                StringBuilder chunk = allChunks.get(chunkName);
             String chunkRawName = chunkToExtension(chunkName);
             String currentOutputName = outputName + "." + chunkRawName;
             if (chunkRawName.equals("")) {

@@ -192,15 +192,15 @@ public class MiniProcessorHelper {
                 //proceed normally
                 if (isChunk) {
                     builder.append(line);
-                    if (i < size) {
+                    //if (i < size) {
                         builder.append("\n");
-                    }
+                    //}
                 } else {
                     if (endingWrap == null) {
                         defaultBuilder.append(line);
-                        if (i < size) {
+                        //if (i < size) {
                             defaultBuilder.append("\n");
-                        }
+                        //}
                     } else {
                         isChunk = true;//from next line read builder
                         chunks.add(new Object[]{defaultExtension, defaultBuilder});
@@ -415,38 +415,87 @@ public class MiniProcessorHelper {
     return result;
   }
 
-  /**
-   * Prefix and suffix given paths strings with pre and suf strings.
-   * @param paths
-   * @param pre
-   * @param suf
-   * @param appendSrcBase
-   * @return String result by concatenating all map items with pre/suffixed 
-   * strings.
-   */
-  static public String getPrefixScriptPathSuffixString(
-          Map<String, String> paths,
-          String pre,
-          String suf,
-          boolean appendSrcBase,
-          boolean unixStyle) {
-    StringBuilder builder = new StringBuilder();
-    Iterator it = paths.keySet().iterator();
-    while (it.hasNext()) {
-      builder.append(pre);
-      String path = (String)it.next();
+    static public String getPrefixScriptPathSuffixString(
+        Map<String, String> paths,
+        String prefix,
+        String suffix,
+        boolean appendSrcBase,
+        boolean unixStyle) {
+        
+        HashMap<String, String> prefixes = new HashMap<String, String>();
+        HashMap<String, String > suffixes = new HashMap<String, String>();
+        
+        prefixes.put("", prefix);
+        suffixes.put("", suffix);
+        
+        return getPrefixScriptPathSuffixString(
+            paths,
+            prefixes,
+            suffixes,
+            appendSrcBase,
+            unixStyle);
+    }
+  
+    /**
+     *
+     * @param paths
+     * @param prefixes
+     * @param suffixes
+     * @param appendSrcBase
+     * @param unixStyle
+     * @return
+     */
+    static public String getPrefixScriptPathSuffixString(
+        Map<String, String> paths,
+        Map<String, String> prefixes,
+        Map<String, String> suffixes,
+        boolean appendSrcBase,
+        boolean unixStyle) {
+      StringBuilder builder = new StringBuilder();
+      Iterator it = paths.keySet().iterator();
+      String extension, pre = null, suf = null;
       
-      if (appendSrcBase) {
-        String srcDir = paths.get(path);
-        builder.append(srcDir);
-        if (!srcDir.endsWith(File.separator)) {
-          builder.append(File.separator);
-        }
+      String defaultPrefix = prefixes.get("");
+      if (defaultPrefix == null) {
+          defaultPrefix = "";
       }
       
-      builder.append(path);
-      builder.append(suf);
-    }
+      String defaultSuffix = suffixes.get("");
+      if (defaultSuffix == null) {
+          defaultSuffix = "";
+      }
+      
+      while (it.hasNext()) {
+          String path = (String) it.next();
+
+          int index = path.lastIndexOf(".") + 1;
+          if (index > 0 && index <= path.length()) {
+              extension = path.substring(index);
+              pre = prefixes.get(extension);
+              suf = suffixes.get(extension);
+          }
+
+          if (pre == null) {
+              pre = defaultPrefix;
+          }
+
+          if (suf == null) {
+              suf = defaultSuffix;
+          }
+          
+          builder.append(pre);
+
+          if (appendSrcBase) {
+              String srcDir = paths.get(path);
+              builder.append(srcDir);
+              if (!srcDir.endsWith(File.separator)) {
+                  builder.append(File.separator);
+              }
+          }
+
+          builder.append(path);
+          builder.append(suf);
+      }
     
     if (File.separatorChar == '\\' && unixStyle) {
       return builder.toString().replaceAll("\\\\", "/");

@@ -37,7 +37,7 @@ public class JSTemplateProcessor implements Processor {
         for (Object[] chunk : chunks) {
             String key = (String) chunk[0];
             String skey = chunkToExtension(key);
-            if (skey != null && skey.equals("template")) {
+            if (skey != null && skey.equals("js.template")) {
                 try {
                     BufferedReader reader =
                         new BufferedReader(
