@@ -1,14 +1,14 @@
-MiniMerge - "Merge files with dependencies."
+CompileJS - "Merge files with dependencies."
 ================================================================================
 
 Summary
 
-MiniMerge allows easy files merging with its dependencies in a defined order.
+CompileJS allows easy files merging with its dependencies in a defined order.
 It is lightweight and written purely in java.
 Program is a great concatenating tool, especially when used for web development 
 build systems. It allows simply and efficiently merging JS or CSS dependencies 
 trees into single output files. Debug web pages can be easily created by using 
-MiniMerge listing page options and release files can be optimized by using 
+CompileJS listing page options and release files can be optimized by using 
 powerful excluding patterns.
 
 ================================================================================
@@ -70,7 +70,7 @@ Program can simply list files instead of merging its contents by using --index
 option - in addition, you can use prefix and suffix for each file path in the
 list to be prefixed/suffixed. Files list is same ordered like in merge process.
 
-When using MiniMerge it is strongly recommended to specify source base and the
+When using CompileJS it is strongly recommended to specify source base and the
 file where process starts from. Please see usage list for more details - miniMerge supports MULTIPLE source bases!
 
 ================================================================================
@@ -110,7 +110,7 @@ file where process starts from. Please see usage list for more details - miniMer
          --help,-h Shows this text                            
 
 
-For even more examples, run java -jar MiniMerge.jar -h
+For even more examples, run java -jar compilejs.jar -h
 
 
 Example:
@@ -118,7 +118,7 @@ Example:
   Merging all javascript from "src" directory and analysing dependencies:
 
 
-    java -jar MiniMerge.jar -s src -o output.js -i .js
+    java -jar compilejs.jar -s src -o output.js -i .js
     
   Command will cause fetching all files from src directory recursively.
   If any path in files is defined as dependency:
@@ -130,7 +130,7 @@ Example:
   To change source base, add --source-base parameter, multiple values comma separated are allowed:
 
 
-    java -jar MiniMerge.jar -s src -o output.js -i .js --source-base "src,other"
+    java -jar compilejs.jar -s src -o output.js -i .js --source-base "src,other"
 
   Now, the dependency is expected to be in src/my/file.js or other/my/file.js
   location. -i option defines matched string(s) at the end of file name (multiple options allowed, comma separated)
@@ -138,14 +138,14 @@ Example:
   To list files only instead of merging their contents, add --index option.
 
 
-    java -jar MiniMerge.jar -s src -o output.js -i .js --source-base "src,other" --index
+    java -jar compilejs.jar -s src -o output.js -i .js --source-base "src,other" --index
 
   To see the output in console and also other useful information use -v (verbosive) or -vv (very verbosive) option.
 
   To add prefix and suffix to listed index, add --prefix and --suffix arguments, like below:
 
   
-    java -jar MiniMerge.jar -s src -o output.js -i .js --source-base "src,other" --index --prefix "<script src='" --suffix "'></script>"
+    java -jar compilejs.jar -s src -o output.js -i .js --source-base "src,other" --index --prefix "<script src='" --suffix "'></script>"
 
   During merging files process its very useful to "cut" out some of its contents, like
 debugging blocks, testing code etc., miniMerge has 3 levels of content filtering, single line level,

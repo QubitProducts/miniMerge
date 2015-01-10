@@ -1,14 +1,14 @@
-MiniMerge - "Merge files with dependencies."
+CompileJS - "Merge files with dependencies."
 ================================================================================
 
 Summary
 
-MiniMerge allows easy files merging with its dependencies in a defined order.
+CompileJS allows easy files merging with its dependencies in a defined order.
 It is lightweight and written purely in java.
 Program is a great concatenating tool, especially when used for web development 
 build systems. It allows simply and efficiently merging JS or CSS dependencies 
 trees into single output files. Debug web pages can be easily created by using 
-MiniMerge listing page options and release files can be optimized by using 
+CompileJS listing page options and release files can be optimized by using 
 powerful excluding patterns.
 
 ================================================================================
@@ -62,7 +62,7 @@ Program can simply list files instead of merging its contents by using --index
 option - in addition, you can use prefix and suffix for each file path in the
 list to be prefixed/suffixed. Files list is same ordered like in merge process.
 
-When using MiniMerge it is strongly recommended to specify source base and the
+When using CompileJS it is strongly recommended to specify source base and the
 file where process starts from. Please see usage list for more details.
 
 ================================================================================

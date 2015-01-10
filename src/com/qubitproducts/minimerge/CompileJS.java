@@ -68,7 +68,7 @@ public class CompileJS {
         + "\n"
         + "CompileJS is a tool supporting OO JavaScript. It has been created to\n"
         + "allow developers to include dependencies and CSS and HTML content in \n"
-        + "JS files. CompileJs extends MiniMerge functionality with per-extension\n"
+        + "JS files. CompileJs extends CompileJS functionality with per-extension\n"
         + "dependencies recognition (CSS, HTML). It also supports embeded string\n"
         + "templates for javascript, so HTML fragments can be in unchanged form.\n"
         + "CompileJS is lightweight and written purely in java.\n"

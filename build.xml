@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="MiniMerge" default="default" basedir=".">
-    <description>Builds, tests, and runs the project MiniMerge.</description>
+<project name="CompileJS" default="default" basedir=".">
+    <description>Builds, tests, and runs the project CompileJS.</description>
     <import file="nbproject/build-impl.xml"/>
     <!--
 
@@ -51,7 +51,7 @@
 
     An example of overriding the target for project execution could look like this:
 
-        <target name="run" depends="MiniMerge-impl.jar">
+        <target name="run" depends="CompileJS-impl.jar">
             <exec dir="bin" executable="launcher.exe">
                 <arg file="${dist.jar}"/>
             </exec>
