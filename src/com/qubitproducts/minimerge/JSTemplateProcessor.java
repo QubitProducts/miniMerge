@@ -19,7 +19,7 @@ import java.util.logging.Logger;
  * @author piotr
  */
 public class JSTemplateProcessor implements Processor {
-    
+    public static String JS_TEMPLATE_NAME = "js.template";
     String prefix;
     String suffix;
     String separator;
@@ -33,11 +33,14 @@ public class JSTemplateProcessor implements Processor {
         this.separator = separator;
     }
     
-    public void process(List<Object[]> chunks) {
+    public void process(List<Object[]> chunks, String extension) {
+        if (extension == null || !extension.equals("js")) {
+            return;
+        }
         for (Object[] chunk : chunks) {
             String key = (String) chunk[0];
             String skey = chunkToExtension(key);
-            if (skey != null && skey.equals("js.template")) {
+            if (skey != null && skey.equals(JS_TEMPLATE_NAME)) {
                 try {
                     BufferedReader reader =
                         new BufferedReader(

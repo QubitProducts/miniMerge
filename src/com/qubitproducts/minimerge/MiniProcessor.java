@@ -656,9 +656,11 @@ public class MiniProcessor {
                     
                     List<Object[]> chunks = 
                         MiniProcessorHelper.getFileInChunks(in, wraps, defaultExtension);
+                    int idx = file.getName().lastIndexOf('.') + 1;
                     
-                    if (this.processor != null) {
-                        processor.process(chunks);
+                    if (idx != -1 && this.processor != null) {
+                        String ext = file.getName().substring(idx);
+                        processor.process(chunks, ext);
                     }
                     
                     for (Object[] chunk : chunks) {

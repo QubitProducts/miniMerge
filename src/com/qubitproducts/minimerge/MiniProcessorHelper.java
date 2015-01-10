@@ -24,7 +24,6 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -173,7 +172,7 @@ public class MiniProcessorHelper {
         
         boolean isChunk = false;
         int i = 1;
-        int size = lines.size();
+//        int size = lines.size();
         for (String line : lines) {
             if (line == null) {
                 continue;

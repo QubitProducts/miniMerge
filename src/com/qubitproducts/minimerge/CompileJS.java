@@ -16,6 +16,7 @@
  */
 package com.qubitproducts.minimerge;
 
+import static com.qubitproducts.minimerge.JSTemplateProcessor.JS_TEMPLATE_NAME;
 import com.qubitproducts.minimerge.MiniProcessor.LogLevel;
 import static com.qubitproducts.minimerge.MiniProcessorHelper.chunkToExtension;
 import java.io.BufferedWriter;
@@ -187,7 +188,8 @@ public class CompileJS {
         + "                   first entry from --source-base will be used ONLY."
         + "\n"
         + " --chunk-extensions array, comma separated custom extensions used for wraps.\n"
-        + "   Default: /*~css*/,/*~html*/,/*~js.template*/  Those wrap definitions are used to take out\n"
+        + "   Default: /*~css*/,/*~html*/,/*~" + JS_TEMPLATE_NAME
+                    + "*/  Those wrap definitions are used to take out\n"
         + "   chunks of file outside to output with extension defined by wrap keyword.\n"
         + "   For example: /*~c-wrap*/ chunk will be written to default OUTPUT \n"
         + "   (-o option) plus c-wrap extension. Its advised to use alphanumeric\n"
@@ -280,7 +282,7 @@ public class CompileJS {
         List<String> defaltWraps = Arrays.asList(new String[]{
             "/*~css*/",
             "/*~html*/",
-            "/*~js.template*/"
+            "/*~" + JS_TEMPLATE_NAME + "*/"
         });
 
         MiniProcessor miniProcessor;

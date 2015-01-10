@@ -8,5 +8,5 @@ import java.util.List;
  * @author piotr
  */
 public interface Processor {
-    public void process(List<Object[]> chunks);
+    public void process(List<Object[]> chunks, String extension);
 }
