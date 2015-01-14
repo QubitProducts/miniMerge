@@ -194,7 +194,14 @@ public class CompileJS {
         + "   For example: /*~c-wrap*/ chunk will be written to default OUTPUT \n"
         + "   (-o option) plus c-wrap extension. Its advised to use alphanumeric\n"
         + " characters and dash and underscore and dot for custom wraps.\n"
-        + " --help,-h Shows this text                                              \n"
+        + " --options compilejs specific options: \n"
+        + "          css2js -> convert css output to javascript. The javascript\n"
+        + "                   producing CSS will be inserted before all JS code.\n"
+        + "          css2js-multiline -> Display js from css in mulitlines.\n"
+        + "          wrap-js -> If javascript files should be wrapped in functions.\n"
+        + "          html-output -> all files should be merged into one html\n"
+        + "                         output file.\n"
+        + "\n"
         + " --help,-h Shows this text                                              \n"
         + "================================================================================";
 
@@ -544,11 +551,16 @@ public class CompileJS {
                         String medium = "\"\n";//\\n\"\n].join('');\n",
                         String sufTemplate = "\\n\",\n    \"";//var template = [\n    \"",
                         
-                        miniProcessor.setProcessor(new JSTemplateProcessor(
+                        miniProcessor.addProcessor(new JSTemplateProcessor(
                             preTemplate,
                             medium,
                             sufTemplate
                         ));
+                        
+                        if (options.containsKey("wrap-js")) {
+                            miniProcessor.addProcessor(new JSWrapperProcessor());
+                        }
+                        
                         processPerExtensions(
                             paths,
                             miniProcessor,
@@ -637,6 +649,31 @@ public class CompileJS {
                 mergeChunks(allchunks, chunks);
             }
         }
+        
+        if (options.containsKey("css2js")) {
+            StringBuilder css = allchunks.get("css");
+            StringBuilder[] newJS = null;
+            if (css != null) {
+                if (!options.containsKey("css2js-multiline")) {
+                    //returns two chunks to inject passed callback
+                    newJS = turnCSSToJS(css.toString().replace("\n", ""));
+                } else {
+                    newJS = turnCSSToJS(css.toString());
+                }
+                allchunks.remove("css");
+                StringBuilder js = allchunks.get("js");
+                if (js != null) {
+                    allchunks.put("js", newJS[0]
+                        .append("function(){\n")
+                        .append(js)
+                        .append("\n}")
+                        .append(newJS[1]));
+                } else {
+                    allchunks.put("js", newJS[0].append(newJS[1]));
+                }
+            }
+        }
+        
         if (!noWraps) {
             if (options == null) {
                 miniProcessor.writeOutputs(allchunks, out, true);
@@ -671,6 +708,56 @@ public class CompileJS {
                 miniProcessor.writeOutputs(allchunks, out, true);
             }
         }
+    }
+    
+    static String tpl1 =
+          "(function (callback) {\n"
+        + "    var check = function () {\n"
+        + "        var head = document.getElementsByTagName('head')[0];\n"
+        + "        if (head) {\n"
+        + "            var css = [\n";
+
+    static String tpl2 = 
+          "            ].join(\"\");\n"
+        + "            var styleElement;\n"
+        + "            styleElement = document.createElement('style');\n"
+        + "            styleElement.setAttribute('type', 'text/css');\n"
+        + "            if (styleElement.styleSheet) {\n"
+        + "                styleElement.styleSheet.cssText = css;\n"
+        + "            } else {\n"
+        + "                styleElement.appendChild(document.createTextNode(css));\n"
+        + "            }\n"
+        + "            head.appendChild(styleElement);\n"
+        + "            if (callback) {setTimeout(callback, 0);}"
+        + "        } else {\n"
+        + "            setTimeout(check, 15);\n"
+        + "        }\n"
+        + "    };\n"
+        + "    check();\n"
+        + "}(";
+
+    static String tpl3 = "));";
+    
+    static StringBuilder[] turnCSSToJS(String css) {
+        String[] lines = css.split("\n");
+        StringBuilder builder = new StringBuilder(tpl1);
+        int i = 0;
+        int size = lines.length;
+        for (String line : lines) {
+            line = line.replace("\\", "\\\\");
+            line = line.replace("\"", "\\\"");
+            builder.append("\t\"");
+            builder.append(line);
+            builder.append("\"");
+            i++;
+            if (i < size) {
+                builder.append(",\n");
+            } else {
+                builder.append("\n");
+            }
+        }
+        builder.append(tpl2);
+        return new StringBuilder[]{builder, new StringBuilder(tpl3)};
     }
     
     static void mergeChunks (Map<String, StringBuilder> to,

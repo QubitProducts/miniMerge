@@ -287,15 +287,15 @@ public class MiniProcessor {
     /**
      * @return the processor
      */
-    public Processor getProcessor() {
-        return processor;
+    public List<Processor> getProcessors() {
+        return processors;
     }
 
     /**
      * @param processor the processor to set
      */
-    public void setProcessor(Processor processor) {
-        this.processor = processor;
+    public void addProcessor(Processor processor) {
+        this.processors.add(processor);
     }
 
   /**
@@ -607,7 +607,7 @@ public class MiniProcessor {
     }
   }
 
-  private Processor processor = null;
+  private final List<Processor> processors = new ArrayList<Processor>();
   
   public Map<String, StringBuilder> mergeFilesWithChunks(
         Map<String, String> paths,
@@ -658,9 +658,11 @@ public class MiniProcessor {
                         MiniProcessorHelper.getFileInChunks(in, wraps, defaultExtension);
                     int idx = file.getName().lastIndexOf('.') + 1;
                     
-                    if (idx != -1 && this.processor != null) {
+                    if (idx != -1 && !this.getProcessors().isEmpty()) {
                         String ext = file.getName().substring(idx);
-                        processor.process(chunks, ext);
+                        for (Processor proc : this.getProcessors()) {
+                            proc.process(chunks, ext);
+                        }
                     }
                     
                     for (Object[] chunk : chunks) {
@@ -922,6 +924,10 @@ public class MiniProcessor {
                 && !this.dependenciesChecked
                   .containsKey(dependencyPath[0]
                   )) {
+
+        ////@TODO    add extension check also to included dependencies - OR
+        //// maybe leav it and dependencies should not be filtered:
+//        this.testIfFileIncluded(files.get(i))
 
           logVeryVerbosive(this.getCurrentIndent() + dependencyPath[0]
               + " base: " + dependencyPath[1]
