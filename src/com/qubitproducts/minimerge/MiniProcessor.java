@@ -540,6 +540,7 @@ public class MiniProcessor {
    * if true, this function will check each line if must be ignored by 
    * using function @see:isLineIgnored
    * @param writer where to write output
+   * @param currentOutputToIgnore
    * @throws FileNotFoundException
    * @throws IOException
    */
@@ -654,8 +655,17 @@ public class MiniProcessor {
                 try {
                     in = (new LineReader(file));
                     
+                    String tmp;
+                    List<String> lines = new ArrayList<String>();
+
+                    while ((tmp = in.readLine()) != null) {
+                        if (!checkLinesExcluded || !isLineIgnored(tmp)) {
+                            lines.add(tmp);
+                        }
+                    }
+                    
                     List<Object[]> chunks = 
-                        MiniProcessorHelper.getFileInChunks(in, wraps, defaultExtension);
+                        MiniProcessorHelper.getFileInChunks(lines, wraps, defaultExtension);
                     int idx = file.getName().lastIndexOf('.') + 1;
                     
                     if (idx != -1 && !this.getProcessors().isEmpty()) {

@@ -682,9 +682,10 @@ public class CompileJS {
                 StringBuilder css = allchunks.get("css");
                 StringBuilder html = allchunks.get("html");
                 StringBuilder index = new StringBuilder();
-                index.append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n");
-                index.append("\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n");
-                index.append("<html xmlns=\"http://www.w3.org/1999/xhtml\">\n");
+//                index.append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n");
+//                index.append("\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n");
+//                index.append("<html xmlns=\"http://www.w3.org/1999/xhtml\">\n");
+                index.append("<html>\n");
                 index.append("<head>\n");
                 index.append("<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\" />");
                 index.append("<style>\n");

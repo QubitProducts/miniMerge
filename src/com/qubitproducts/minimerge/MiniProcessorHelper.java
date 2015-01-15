@@ -114,14 +114,8 @@ public class MiniProcessorHelper {
     writer.flush();
   }
 
-    public static List<Object[]> getFileInChunks(LineReader reader,
+    public static List<Object[]> getFileInChunks(List<String> lines,
         List<String> wraps, String defaultChunkName) throws IOException {
-        String tmp;
-        List<String> lines = new ArrayList<String>();
-        
-        while ((tmp = reader.readLine()) != null) {
-            lines.add(tmp);
-        }
         
         List<Object[]> ret = getStringInChunks(lines, wraps, defaultChunkName);
         
