@@ -16,7 +16,6 @@
  */
 package com.qubitproducts.minimerge;
 
-import static com.qubitproducts.minimerge.JSTemplateProcessor.JS_TEMPLATE_NAME;
 import com.qubitproducts.minimerge.MiniProcessor.LogLevel;
 import static com.qubitproducts.minimerge.MiniProcessorHelper.chunkToExtension;
 import java.io.BufferedWriter;
@@ -188,7 +187,7 @@ public class CompileJS {
         + "                   first entry from --source-base will be used ONLY."
         + "\n"
         + " --chunk-extensions array, comma separated custom extensions used for wraps.\n"
-        + "   Default: /*~css*/,/*~html*/,/*~" + JS_TEMPLATE_NAME
+        + "   Default: /*~css*/,/*~html*/,/*~" + JSTemplateProcessor.JS_TEMPLATE_NAME
                     + "*/  Those wrap definitions are used to take out\n"
         + "   chunks of file outside to output with extension defined by wrap keyword.\n"
         + "   For example: /*~c-wrap*/ chunk will be written to default OUTPUT \n"
@@ -289,7 +288,8 @@ public class CompileJS {
         List<String> defaltWraps = Arrays.asList(new String[]{
             "/*~css*/",
             "/*~html*/",
-            "/*~" + JS_TEMPLATE_NAME + "*/"
+            "/*~" + JSTemplateProcessor.JS_TEMPLATE_NAME + "*/",
+            "/*~" + JSStringProcessor.JS_TEMPLATE_NAME + "*/"
         });
 
         MiniProcessor miniProcessor;
@@ -548,13 +548,19 @@ public class CompileJS {
                     if (perExtensions) {
                         
                         String preTemplate = "    \"";//var template = [\n    \"",
-                        String medium = "\"\n";//\\n\"\n].join('');\n",
-                        String sufTemplate = "\\n\",\n    \"";//var template = [\n    \"",
+                        String sufTemplate = "\"\n";//\\n\"\n].join('');\n",
+                        String separator = "\\n\",\n    \"";//var template = [\n    \"",
                         
                         miniProcessor.addProcessor(new JSTemplateProcessor(
                             preTemplate,
-                            medium,
-                            sufTemplate
+                            sufTemplate,
+                            separator
+                        ));
+                        
+                        miniProcessor.addProcessor(new JSStringProcessor(
+                            "\"",
+                            "\"",
+                            "\\n"
                         ));
                         
                         if (options.containsKey("wrap-js")) {
