@@ -735,7 +735,7 @@ public class CompileJS {
         + "                styleElement.appendChild(document.createTextNode(css));\n"
         + "            }\n"
         + "            head.appendChild(styleElement);\n"
-        + "            if (callback) {setTimeout(callback, 0);}"
+        + "            if (callback) {callback();}"
         + "        } else {\n"
         + "            setTimeout(check, 15);\n"
         + "        }\n"
