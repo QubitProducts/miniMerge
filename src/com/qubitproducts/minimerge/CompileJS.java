@@ -559,7 +559,7 @@ public class CompileJS {
                         
                         miniProcessor.addProcessor(new JSStringProcessor(
                             "\"",
-                            "\"",
+                            "\"\n",
                             "\\n"
                         ));
                         
