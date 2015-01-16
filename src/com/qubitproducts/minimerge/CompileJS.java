@@ -707,7 +707,7 @@ public class CompileJS {
                 index.append("\n//]]>\n</script>\n");
                 index.append("</body>\n");
                 index.append("</html>");
-                File output = new File(out + ".xhtml");
+                File output = new File(out + ".html");//xhtml
                 BufferedWriter writer = new BufferedWriter(new FileWriter(output));
                 writer.append(index);
                 writer.close();
