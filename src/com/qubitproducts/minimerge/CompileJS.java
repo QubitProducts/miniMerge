@@ -780,7 +780,7 @@ public class CompileJS {
             line = line.replace("\"", "\\\"");
             builder.append("\t\"");
             builder.append(line);
-            builder.append("\"");
+            builder.append("\\n\"");
             i++;
             if (i < size) {
                 builder.append(",\n");
@@ -826,7 +826,7 @@ public class CompileJS {
             line = line.replace("\"", "\\\"");
             builder.append("\t\"");
             builder.append(line);
-            builder.append("\"");
+            builder.append("\\n\"");
             i++;
             if (i < size) {
                 builder.append(",\n");
