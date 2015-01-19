@@ -643,7 +643,7 @@ public class CompileJS {
             } else {
                 //chunks returned are mapped by extensions, not output, so example:
                 // "": "defulaut output"
-                // "css": ".className {sdfgdasf} "
+                // "html": ".className {sdfgdasf} "
                 // "html": "<div/>"
                 Map<String, StringBuilder> chunks = 
                     miniProcessor.mergeFilesWithChunks(
@@ -656,10 +656,37 @@ public class CompileJS {
             }
         }
         
+        if (options.containsKey("html2js")) {
+          String[] types = new String[]{"html", "html","xhtml"};
+          for (String type : types) {
+            StringBuilder html = allchunks.get(type);
+            if (html != null) {
+              StringBuilder[] newJS = null;
+              if (!options.containsKey("html2js-multiline")) {
+                //returns two chunks to inject passed callback
+                newJS = turnHTMLToJS(html.toString().replace("\n", ""));
+              } else {
+                newJS = turnHTMLToJS(html.toString());
+              }
+              allchunks.remove(type);
+              StringBuilder js = allchunks.get("js");
+              if (js != null) {
+                allchunks.put("js", newJS[0]
+                        .append("function(){\n")
+                        .append(js)
+                        .append("\n}")
+                        .append(newJS[1]));
+              } else {
+                allchunks.put("js", newJS[0].append(newJS[1]));
+              }
+            }
+          }
+        }
+        
         if (options.containsKey("css2js")) {
             StringBuilder css = allchunks.get("css");
-            StringBuilder[] newJS = null;
             if (css != null) {
+              StringBuilder[] newJS = null;
                 if (!options.containsKey("css2js-multiline")) {
                     //returns two chunks to inject passed callback
                     newJS = turnCSSToJS(css.toString().replace("\n", ""));
@@ -681,9 +708,7 @@ public class CompileJS {
         }
         
         if (!noWraps) {
-            if (options == null) {
-                miniProcessor.writeOutputs(allchunks, out, true);
-            } else if (options.containsKey("html-output")) {
+            if (options.containsKey("html-output")) {
                 StringBuilder js = allchunks.get("js");
                 StringBuilder css = allchunks.get("css");
                 StringBuilder html = allchunks.get("html");
@@ -765,6 +790,52 @@ public class CompileJS {
         }
         builder.append(tpl2);
         return new StringBuilder[]{builder, new StringBuilder(tpl3)};
+    }
+    
+    static String htpl1 =
+          "(function (callback) {\n"
+        + "    var check = function () {\n"
+        + "        var body = document.getElementsByTagName('body')[0];\n"
+        + "        if (body) {\n"
+        + "            var html = [\n";
+
+    static String htpl2 = 
+          "            ].join(\"\");\n"
+        + "            var div;\n"
+        + "            div = document.createElement('div');\n"
+        + "            div.setAttribute('class', 'html-to-js');\n"
+        + "            div.innerHTML = html;\n"
+        + "            body.appendChild(div);\n"
+        + "            if (callback) {callback();}"
+        + "        } else {\n"
+        + "            setTimeout(check, 15);\n"
+        + "        }\n"
+        + "    };\n"
+        + "    check();\n"
+        + "}(";
+
+    static String htpl3 = "));";
+    
+    static StringBuilder[] turnHTMLToJS(String html) {
+        String[] lines = html.split("\n");
+        StringBuilder builder = new StringBuilder(htpl1);
+        int i = 0;
+        int size = lines.length;
+        for (String line : lines) {
+            line = line.replace("\\", "\\\\");
+            line = line.replace("\"", "\\\"");
+            builder.append("\t\"");
+            builder.append(line);
+            builder.append("\"");
+            i++;
+            if (i < size) {
+                builder.append(",\n");
+            } else {
+                builder.append("\n");
+            }
+        }
+        builder.append(htpl2);
+        return new StringBuilder[]{builder, new StringBuilder(htpl3)};
     }
     
     static void mergeChunks (Map<String, StringBuilder> to,
