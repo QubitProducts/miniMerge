@@ -22,6 +22,8 @@ public class InjectionProcessor implements Processor {
     String INJECT_STR = "//:inject";
     private MiniProcessor mprocessor;
     
+    private boolean replacingLine = false;
+    
     public InjectionProcessor(){
         super();
     };    
@@ -83,9 +85,11 @@ public class InjectionProcessor implements Processor {
                             //process file if exists
                             if (exists || f.exists()) {
                                 skip = true;
-                                String pre = line.substring(0, injectStart);
-                                builder.append("\n");
-                                builder.append(pre);
+                                if (!this.isReplacingLine()) {
+                                    String pre = line.substring(0, injectStart);
+                                    builder.append("\n");
+                                    builder.append(pre);
+                                }
                                 
                                 LineReader lr = new LineReader(f);
                                 String l = null;
@@ -94,10 +98,12 @@ public class InjectionProcessor implements Processor {
                                     builder.append("\n");
                                 }
                                 
+                                if (!this.isReplacingLine()) {
                                 //bring suffixed stuff...
-                                for (int i = j + 1; i < parts.length; i++) {
-                                    builder.append(" ");
-                                    builder.append(parts[i]);
+                                    for (int i = j + 1; i < parts.length; i++) {
+                                        builder.append(" ");
+                                        builder.append(parts[i]);
+                                    }
                                 }
                             }
                         }
@@ -124,5 +130,18 @@ public class InjectionProcessor implements Processor {
         }
     }
 
+    /**
+     * @return the replacingLine
+     */
+    public boolean isReplacingLine() {
+        return replacingLine;
+    }
+
+    /**
+     * @param replaceLine the replacingLine to set
+     */
+    public void setReplacingLine(boolean replaceLine) {
+        this.replacingLine = replaceLine;
+    }
 }
 

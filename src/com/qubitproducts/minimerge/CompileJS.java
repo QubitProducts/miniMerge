@@ -571,10 +571,15 @@ public class CompileJS {
                             miniProcessor.addProcessor(new JSWrapperProcessor());
                         }
                         
-                        if (options.containsKey("injections")) {
-                            miniProcessor.addProcessor(new InjectionProcessor(
+                        if (options.containsKey("injections") ||
+                            options.containsKey("line-injections")) {
+                            InjectionProcessor p = new InjectionProcessor(
                                 miniProcessor
-                            ));
+                            );
+                            if (options.containsKey("line-injections")) {
+                                p.setReplacingLine(true);
+                            }
+                            miniProcessor.addProcessor(p);
                         }
                         
                         processPerExtensions(
