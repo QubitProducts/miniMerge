@@ -16,8 +16,12 @@
  */
 package com.qubitproducts.minimerge;
 
+import com.qubitproducts.minimerge.processors.JSWrapperProcessor;
+import com.qubitproducts.minimerge.processors.JSTemplateProcessor;
+import com.qubitproducts.minimerge.processors.JSStringProcessor;
 import com.qubitproducts.minimerge.MiniProcessor.LogLevel;
 import static com.qubitproducts.minimerge.MiniProcessorHelper.chunkToExtension;
+import com.qubitproducts.minimerge.processors.InjectionProcessor;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -565,6 +569,12 @@ public class CompileJS {
                         
                         if (options.containsKey("wrap-js")) {
                             miniProcessor.addProcessor(new JSWrapperProcessor());
+                        }
+                        
+                        if (options.containsKey("injections")) {
+                            miniProcessor.addProcessor(new InjectionProcessor(
+                                miniProcessor
+                            ));
                         }
                         
                         processPerExtensions(

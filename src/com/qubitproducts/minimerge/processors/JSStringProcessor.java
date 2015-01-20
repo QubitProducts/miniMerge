@@ -1,16 +1,11 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-package com.qubitproducts.minimerge;
+package com.qubitproducts.minimerge.processors;
 
+import com.qubitproducts.minimerge.Processor;
 import static com.qubitproducts.minimerge.MiniProcessorHelper.chunkToExtension;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -18,13 +13,13 @@ import java.util.logging.Logger;
  *
  * @author piotr
  */
-public class JSTemplateProcessor implements Processor {
-    public static String JS_TEMPLATE_NAME = "js.template";
+public class JSStringProcessor implements Processor {
+    public static String JS_TEMPLATE_NAME = "js.string";
     String prefix;
     String suffix;
     String separator;
     
-    public JSTemplateProcessor(
+    public JSStringProcessor(
             String prefix,
             String suffix,
             String separator) {
@@ -60,7 +55,7 @@ public class JSTemplateProcessor implements Processor {
                     chunk[0] = "js";
                     chunk[1] = builder;
                 } catch (IOException ex) {
-                    Logger.getLogger(JSTemplateProcessor.class.getName())
+                    Logger.getLogger(JSStringProcessor.class.getName())
                         .log(Level.SEVERE, null, ex);
                 }
             }

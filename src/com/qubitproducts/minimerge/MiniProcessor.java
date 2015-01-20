@@ -715,17 +715,17 @@ public class MiniProcessor {
         Map<String, StringBuilder> allChunks,
         String outputName,
         boolean clear) throws IOException {
-        if (clear) for (String chunkName : allChunks.keySet()) {
-            String chunkRawName = chunkToExtension(chunkName);
-            String currentOutputName = outputName + "." + chunkRawName;
-            if (chunkRawName.equals("")) {
-                currentOutputName = outputName;
-            }
-            File f = new File(currentOutputName);
-            if (f.exists()){
-                f.delete();
-            }
-        }
+//        if (clear) for (String chunkName : allChunks.keySet()) {
+//            String chunkRawName = chunkToExtension(chunkName);
+//            String currentOutputName = outputName + "." + chunkRawName;
+//            if (chunkRawName.equals("")) {
+//                currentOutputName = outputName;
+//            }
+//            File f = new File(currentOutputName);
+//            if (f.exists()){
+//                f.delete();
+//            }
+//        }
 
         for (String chunkName : allChunks.keySet ()) {
                 StringBuilder chunk = allChunks.get(chunkName);
@@ -736,7 +736,7 @@ public class MiniProcessor {
             }
             ///
             BufferedWriter writer
-                = new BufferedWriter(new FileWriter(currentOutputName, true));
+                = new BufferedWriter(new FileWriter(currentOutputName, !clear));
             writer.append(chunk);
             writer.flush();
             writer.close();
