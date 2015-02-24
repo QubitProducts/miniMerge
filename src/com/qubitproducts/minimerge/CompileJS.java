@@ -247,10 +247,16 @@ public class CompileJS {
      * @param args the command line arguments
      * @throws java.io.IOException
      */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, Exception {
+        new CompileJS().compile(args);
+        LineReader.clearCache();
+    }
+    
+    public long compile(String[] args) throws IOException, Exception {
 
         boolean exit = false;
         long start = System.nanoTime();
+        long done = 0;
         /*
          * Initialise the arguments to be stored.
          */
@@ -382,6 +388,8 @@ public class CompileJS {
                     perExtensions = false;
                 } else if (args[i].equals("--chunk-extensions")) {
                     defaltWraps = Arrays.asList(args[i++ + 1].split(","));
+                } else if (args[i].equals("--no-chunks")) {
+                    defaltWraps = null;
                 }
 //                else if (args[i].equals("--html-output")) {
 //                    options.put("html-output", "true");
@@ -401,9 +409,22 @@ public class CompileJS {
             src = ".";
         }
 
+        if (cwd != null) {
+            cwd = new File(cwd).getCanonicalPath();
+            if (src.startsWith(cwd)) {
+                src = src.substring(cwd.length());
+                while(src.startsWith(File.separator)) {
+                    src = src.substring(1);
+                }
+            }
+        }
+        
         File srcFile = new File(cwd, src);
-        if (src.startsWith(File.separator)) {
-            srcFile = new File(src);
+       
+        if (!srcFile.exists()) {
+            throw new Exception("File: " + 
+                srcFile.getAbsolutePath() + 
+                "Does not exist. \nPlease check your configutration.");
         }
 
         if (sourceBase.isEmpty()) {
@@ -435,8 +456,9 @@ public class CompileJS {
                 " miniMERGE config selected:");
             ps.println("  -i  Included file types: " + filesIncluded
                 + "\n  -o  Output: "
-                + (out == null ? "null" : (new File(out)).getAbsolutePath())
-                + "\n  -s  Src dir: " + src
+                + (out == null ? "null" : 
+                    (new File(cwd, out)).getAbsolutePath() + ".EXT")
+                + "\n  -s  Src dir: " + new File(cwd,src).getPath()
                 + "\n  -ir Ignoring RequireJS: " + (ignoreRJS ? "yes" : "no")
                 + "\n  -nd No dependencies: " + (!dependencies)
                 + "\n  -v  Verbosive: " + (verbose ? "yes" : "no")
@@ -479,11 +501,13 @@ public class CompileJS {
 
         if (exit) {
             printArgs();
-            return;
+            done = (System.nanoTime() - start);
+            return done;
         }
 
         if (out != null) {
             try {
+                
                 out = new File(cwd, out).getAbsolutePath();
                 miniProcessor = new MiniProcessor();
                 miniProcessor.setAssumeFilesExist(!fsExistsOption);
@@ -593,9 +617,6 @@ public class CompileJS {
                     }
                 }
                 if (info) {
-                    ps.println("Done in: "
-                        + ((float) (System.nanoTime() - start)) / 1000000000.0
-                        + "s");
                     ps.println("Merging/Index finished.\n\n");
                     ps.println("Heap: " + Runtime.getRuntime().totalMemory() / 1024 / 1024
                         + "MB\n");
@@ -608,6 +629,16 @@ public class CompileJS {
                 LineReader.clearCache();
             }
         }
+        
+        done = System.nanoTime() - start;
+        
+        if (info) {
+            ps.println("Done in: "
+                        + ((float) done / 1000000000.0 )
+                        + "s");
+        }
+        
+        return done;
     }
     
     private static void processPerExtensions(
@@ -643,7 +674,7 @@ public class CompileJS {
         
         Map<String, StringBuilder> allchunks = new HashMap<String, StringBuilder>();
         
-        boolean noWraps = wraps == null;
+        boolean noWraps = (wraps == null);
         
         for (String ext : extensionToNameMap.keySet()) {
             Map<String, String> filePaths = extensionToNameMap.get(ext);
@@ -752,7 +783,11 @@ public class CompileJS {
                 writer.append(index);
                 writer.close();
             } else {
-                miniProcessor.writeOutputs(allchunks, out, true);
+                if (allchunks.isEmpty()) {
+                    log("\n\n>>> No content to write. <<<\n\n\n");
+                } else {
+                    miniProcessor.writeOutputs(allchunks, out, true);
+                }
             }
         }
     }

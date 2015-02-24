@@ -145,7 +145,6 @@ public class MiniProcessorHelper {
                 List<String> wraps,
                 String defaultExtension)
             throws IOException {
-        String tmp;
         if (defaultExtension == null) {
             defaultExtension = "";
         }
@@ -158,6 +157,7 @@ public class MiniProcessorHelper {
 
         ArrayList<String[]> startingWraps = new ArrayList<String[]>();
         for (String wrap : wraps) {
+            if (wrap != null && !wrap.equals(""))
             startingWraps.add(new String[]{
                 wrap.replaceFirst("~", ""),
                 wrap
@@ -165,7 +165,6 @@ public class MiniProcessorHelper {
         }
         
         boolean isChunk = false;
-        int i = 1;
 //        int size = lines.size();
         for (String line : lines) {
             if (line == null) {
@@ -202,7 +201,6 @@ public class MiniProcessorHelper {
                 }
 
             }
-            i++;
         }
         
         //flush unclosed ending
