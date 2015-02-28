@@ -270,7 +270,7 @@ public class CompileJS {
         boolean unixPath = true;
         boolean dependencies = true;
         boolean parseOnlyFirstComments = false;
-        
+
         String defaultPrefix = "<script type=\"text/javascript\" src=\"";
         String defaultSuffix = "\"></script>";
         
@@ -452,7 +452,7 @@ public class CompileJS {
                     : " no (Merge files.)")
                 + "\n  --prefix (Index paths prefix): " + defaultPrefix
                 + "\n  --suffix (Index paths suffix): " + defaultSuffix
-                + "\n  --not-relative: " + (relative ? "yes, paths will be absolute"
+                + "\n  --not-relative: " + (!relative ? "yes, paths will be absolute"
                     : "no, paths will be as defined in source base.")
                 + "\n  --add-base: " + withSourceBase
                 + "\n  --unix-path: " + unixPath
