@@ -734,12 +734,17 @@ public class MiniProcessor {
             if (chunkRawName.equals("")) {
                 currentOutputName = outputName;
             }
-            ///
-            BufferedWriter writer
-                = new BufferedWriter(new FileWriter(currentOutputName, !clear));
-            writer.append(chunk);
-            writer.flush();
-            writer.close();
+            if (chunk != null && chunk.length() > 0) {
+                BufferedWriter writer = null;
+                try {
+                    writer = new BufferedWriter(
+                        new FileWriter(currentOutputName, !clear));
+                    writer.append(chunk);
+                    writer.flush();
+                } finally {
+                    if (writer != null) writer.close();
+                }
+            }
         }
     }
     

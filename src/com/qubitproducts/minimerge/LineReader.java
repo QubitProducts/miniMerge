@@ -26,7 +26,8 @@ public class LineReader {
     private LineReader lineReader = null;
     private List<String> lines = new ArrayList<String>();
 
-    private static HashMap<String, List<String>> cache = new HashMap<String, List<String>>();
+    private static HashMap<String, List<String>> cache = 
+        new HashMap<String, List<String>>();
 
     public static void clearCache() {
         cache = new HashMap<String, List<String>>();
