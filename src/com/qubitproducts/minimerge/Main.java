@@ -485,7 +485,7 @@ public class Main {
             }
           }
         } else {
-          miniProcessor.mergeFilesToFile(paths, true, out);
+          miniProcessor.stripAndMergeFilesToFile(paths, true, out);
         }
         if (info) {
           ps.println("Done in: "

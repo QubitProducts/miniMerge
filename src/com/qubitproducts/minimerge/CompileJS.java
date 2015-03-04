@@ -176,6 +176,8 @@ public class CompileJS {
         + "   separated string will be tested with java regex method to match \n"
         + "   name of file. If any of strings match - file will be     \n"
         + "   excluded from processing.\n"
+        + " --keep-lines If passed, stripping process will put empty lines in \n"
+        + "              place of cut out ones. Default: false.\n"
         + " --unix-path If index listings should care for UNIX style output, "
         + "         default is: true\n"
         + " --exclude-file-path-patterns If this option is specified, each comma \n"
@@ -275,18 +277,14 @@ public class CompileJS {
         boolean generateIndex = false;
         boolean unixPath = true;
         boolean dependencies = true;
+        boolean keepLines = false;
         boolean parseOnlyFirstComments = false;
         
         String defaultPrefix = "<script type=\"text/javascript\" src=\"";
         String defaultSuffix = "\"></script>";
         
         Map<String, String> prefixPerExtension = new HashMap<String, String>();
-        prefixPerExtension.put("css", "<link rel=\"stylesheet\" href=\"");
-        prefixPerExtension.put("js", defaultPrefix);
-        
         Map<String, String> suffixPerExtension = new HashMap<String, String>();
-        suffixPerExtension.put("css", ">\n");
-        suffixPerExtension.put("js", defaultSuffix + "\n"); //clean up defaults
         
         boolean withSourceBase = false;
         String excludeFilePatterns = null;
@@ -311,6 +309,8 @@ public class CompileJS {
                 if (args[i].equals("-i")) {
                     filesIncluded = args[i++ + 1];
 
+                } else if (args[i].equals("--keep-lines")) {
+                  keepLines = true;
                 } else if (args[i].equals("-o")) {
                     out = args[i++ + 1];
                 } else if (args[i].equals("-s")) {
@@ -344,6 +344,7 @@ public class CompileJS {
                 } else if (args[i].equals("--suffix")) {
                     defaultSuffix = args[i++ + 1];
                 } else if (args[i].startsWith("--prefix-")) {
+                    ps.println(args[i]);
                     prefixPerExtension.put(
                         args[i].replaceFirst("--prefix-", ""),
                         args[i + 1]);
@@ -404,6 +405,21 @@ public class CompileJS {
         //put defaults
         prefixPerExtension.put("", defaultPrefix);
         suffixPerExtension.put("", defaultSuffix + eol);
+        
+        if (!prefixPerExtension.containsKey("css")) {  
+            prefixPerExtension.put("css", "<link rel=\"stylesheet\" href=\"");
+        }
+        if (!prefixPerExtension.containsKey("js")) {
+            prefixPerExtension.put("js", defaultPrefix);
+        }
+        
+        if (!suffixPerExtension.containsKey("css")) {
+            suffixPerExtension.put("css", ">\n");
+        }
+        
+        if (!suffixPerExtension.containsKey("js")) {
+            suffixPerExtension.put("js", defaultSuffix + "\n"); //clean up defaults
+        }
         
         if (src == null) {
             src = ".";
@@ -468,6 +484,7 @@ public class CompileJS {
                 + "\n  -df Exclude files with keywords: " + filesToExclude
                 + "\n  --parse-only-first-comment-dependencies: " + parseOnlyFirstComments
                 + "\n  --source-base " + sourceBase
+                + "\n  --keep-lines " + keepLines
                 + "\n  --index: "
                 + (generateIndex
                     ? " yes (Generate paths index only (no files merging).)"
@@ -507,9 +524,9 @@ public class CompileJS {
 
         if (out != null) {
             try {
-                
                 out = new File(cwd, out).getAbsolutePath();
                 miniProcessor = new MiniProcessor();
+                miniProcessor.setKeepLines(keepLines);
                 miniProcessor.setAssumeFilesExist(!fsExistsOption);
                 miniProcessor.setSourceBase(sourceBase.toArray(new String[0]));
                 miniProcessor.setMergeOnly(filesIncluded.split(","));
@@ -613,7 +630,7 @@ public class CompileJS {
                             options,
                             defaltWraps);
                     } else {
-                        miniProcessor.mergeFilesToFile(paths, true, out);
+                        miniProcessor.stripAndMergeFilesToFile(paths, true, out);
                     }
                 }
                 if (info) {
@@ -692,7 +709,7 @@ public class CompileJS {
                 // "html": ".className {sdfgdasf} "
                 // "html": "<div/>"
                 Map<String, StringBuilder> chunks = 
-                    miniProcessor.mergeFilesWithChunks(
+                    miniProcessor.mergeFilesWithChunksAndStripFromWraps(
                         filePaths,
                         true,
                         currentOut,

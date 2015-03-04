@@ -50,28 +50,30 @@ public class MiniProcessorHelper {
    * @throws IOException
    * @throws Exception 
    */
-  public static void stripFileFromWraps(File file, String[] wraps)
+  public static void stripFileFromWraps(File file, String[] wraps, String replacement)
           throws FileNotFoundException, IOException, Exception {
     
     if (wraps == null || wraps.length == 0) return;
     
     List<String> lines = new ArrayList<String>();
-    BufferedReader reader = new BufferedReader(new FileReader(file));
+    BufferedReader reader = null;
+    
     try {
+      reader = new BufferedReader(new FileReader(file));
       String line = null;
       while ((line = reader.readLine()) != null) {
         lines.add(line);
       }
       for (int i = 0; i < wraps.length; i++) {
-        lines = stripFromWrap(lines, wraps[i]);
+        lines = stripFromWrap(lines, wraps[i], replacement);
       }
     } finally {
       if (reader != null) reader.close();
     }
     
-    BufferedWriter writer = 
-            new BufferedWriter(new FileWriter(file));
+    BufferedWriter writer = null;
     try {
+      writer = new BufferedWriter(new FileWriter(file));
       for (int i = 0; i < lines.size(); i++) {
         writer.write(lines.get(i) + "\n");
       }
@@ -94,7 +96,8 @@ public class MiniProcessorHelper {
    */
   public static void stripFromWrap(BufferedReader reader,
                                    BufferedWriter writer,
-                                   String wrap) throws IOException {
+                                   String wrap,
+                                   String replacement) throws IOException {
     String line;
     String start = wrap.replaceFirst("~", "");
     String end = wrap;
@@ -105,11 +108,15 @@ public class MiniProcessorHelper {
       }
       if (!ignore) {
         writer.append(line);
+        writer.append("\n");
+      } else if (replacement != null) {
+        writer.append(replacement);
+        writer.append("\n");
       }
       if (end.length() > 0 && line.contains(end)) {
         ignore = false;
       }
-      writer.append("\n");
+      
     }
     writer.flush();
   }
@@ -221,8 +228,10 @@ public class MiniProcessorHelper {
         return null;
     }
     
-  public static List<String> stripFromWrap(List<String> lines,
-                                   String wrap) throws IOException {
+  public static List<String> stripFromWrap(
+                                  List<String> lines,
+                                  String wrap,
+                                  String replacement) throws IOException {
     ArrayList<String> result = new ArrayList<String>();
     String start = wrap.replaceFirst("~", "");
     String end = wrap;
@@ -233,8 +242,8 @@ public class MiniProcessorHelper {
       }
       if (!ignore) {
         result.add(line);
-      } else {
-        result.add("");
+      } else if (replacement != null) {
+        result.add(replacement);
       }
       if (end.length() > 0 && line.contains(end)) {
         ignore = false;
@@ -247,7 +256,8 @@ public class MiniProcessorHelper {
   
   public static void stripFromWrap(LineReader reader,
                                    BufferedWriter writer,
-                                   String wrap) throws IOException {
+                                   String wrap,
+                                   String replacement) throws IOException {
     String line;
     String start = wrap.replaceFirst("~", "");
     String end = wrap;
@@ -258,6 +268,8 @@ public class MiniProcessorHelper {
       }
       if (!ignore) {
         writer.append(line);
+      } else if (replacement != null) {
+        writer.append(replacement);
       }
       if (end.length() > 0 && line.contains(end)) {
         ignore = false;
@@ -268,20 +280,36 @@ public class MiniProcessorHelper {
   }
   
   /**
-   * Function stripping from wraps string buffers.
-   * String wrapping content must consist on ~ pattern,
-   * which translates to any starting A string can open wrapped context
-   * and any string with ~ that gives same A after replacing first ~ occurrence.
-   * @param reader
-   * @param writer
+   * 
+   * @param lines
    * @param wraps
+   * @return
    * @throws IOException 
    */
+  public static List<String> stripFromWraps(List<String> lines, 
+                                  List<String> wraps,
+                                  String replacement) throws IOException {
+      for (String wrap : wraps) {
+        lines = stripFromWrap(lines, wrap, replacement);
+      }
+      return lines;
+  }
+  
+  public static List<String> stripFromWraps(List<String> lines, 
+                                  String[] wraps,
+                                  String replacement) throws IOException {
+      for (String wrap : wraps) {
+        lines = stripFromWrap(lines, wrap, replacement);
+      }
+      return lines;
+  }
+  
   public static void stripFromWraps(BufferedReader reader, 
                                     BufferedWriter writer, 
-                                    String[] wraps) throws IOException {
+                                    String[] wraps,
+                                    String replacement) throws IOException {
     for (int i = 0; i < wraps.length; i++) {
-      stripFromWrap(reader, writer, wraps[i]);
+      stripFromWrap(reader, writer, wraps[i], replacement);
     }
   }
   
@@ -320,7 +348,7 @@ public class MiniProcessorHelper {
    * @throws IOException
    * @throws Exception 
    */
-  public static void stripFileFromWrap(File file, String wrap)
+  public static void stripFileFromWrap(File file, String wrap, String replacement)
           throws FileNotFoundException, IOException, Exception {
     BufferedReader in = null;
     BufferedWriter out = null;
@@ -333,7 +361,7 @@ public class MiniProcessorHelper {
         in = new BufferedReader(new FileReader(file));
         FileWriter fw = new FileWriter(_file);
         out = new BufferedWriter(fw);
-        stripFromWrap(in, out, wrap);
+        stripFromWrap(in, out, wrap, replacement);
         
         out.close();
         in.close();
