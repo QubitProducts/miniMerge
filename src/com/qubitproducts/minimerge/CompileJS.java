@@ -300,7 +300,7 @@ public class CompileJS {
             "/*~" + JSStringProcessor.JS_TEMPLATE_NAME + "*/"
         });
 
-        MiniProcessor miniProcessor;
+        MiniProcessor miniProcessor = null;
         HashMap<String, String> options = new HashMap<String, String>();
         String eol = "\n";
         
@@ -648,6 +648,10 @@ public class CompileJS {
         }
         
         done = System.nanoTime() - start;
+        
+        if (miniProcessor != null) {
+          miniProcessor.clearCache();
+        }
         
         if (info) {
             ps.println("Done in: "
