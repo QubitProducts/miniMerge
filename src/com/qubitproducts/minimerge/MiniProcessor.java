@@ -229,11 +229,12 @@ public class MiniProcessor {
           return list;
       }
       
-      pattern = pattern.replaceAll("\\*", "");
+      String[] chunks = pattern.split("\\*");
 
       for (File file : files) {
-          if (file.getName().startsWith(pattern)) {
-              list.add(file.getName());
+          if (file.getName().startsWith(chunks[0]) &&
+              (chunks.length < 2 || file.getName().endsWith(chunks[1]))) {
+              list.add(new File(base, file.getName()).getPath());
           }
       }
       
@@ -270,13 +271,12 @@ public class MiniProcessor {
     if (type == Types.IMPORT || type == Types.CSS) {
         if (helpingImportsMap.containsKey(pathPattern)) {
             objectives = helpingImportsMap.get(pathPattern);
-        } else if (pathPattern.endsWith("*")) {
+        } else if (pathPattern.contains("*")) {
             //regex at end
-            String starting = pathPattern.substring(
+            String starting = pathPattern.substring(0,
                 pathPattern.lastIndexOf("/"));
             String ending
-                = pathPattern.substring(pathPattern.lastIndexOf("/") + 1,
-                    pathPattern.length());
+                = pathPattern.substring(pathPattern.lastIndexOf("/") + 1);
             String[] dirs = this.getSourceBase();
             
             for (String dir : dirs) {
