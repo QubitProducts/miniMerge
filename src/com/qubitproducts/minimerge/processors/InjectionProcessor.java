@@ -43,7 +43,7 @@ public class InjectionProcessor implements Processor {
     public void process(List<Object[]> chunks, String extension) {
         for (Object[] chunk : chunks) {
             String key = (String) chunk[0];
-            String skey = chunkToExtension(key);
+//            String skey = chunkToExtension(key);
 //            if (skey != null && skey.equals(JS_TEMPLATE_NAME)) {
             try {
                 BufferedReader reader
@@ -61,7 +61,11 @@ public class InjectionProcessor implements Processor {
                             
                             //pick the path
                             int j = 1;
-                            String path = parts[j];
+                            
+                            String path = 
+                                MiniProcessor.translateClassPath(parts[j]) 
+                                  + ".js";
+                            
                             while(path == null || path.trim().equals("")) {
                                 path = parts[++j];
                             }

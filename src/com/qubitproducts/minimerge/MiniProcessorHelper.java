@@ -137,12 +137,24 @@ public class MiniProcessorHelper {
         return ret;
     }
     
+    public static HashMap<String, String> chunkToExtensionCache =
+        new HashMap<String, String>();
+    
     public static String chunkToExtension(String in) {
         if (in == null) {
             return null;
         }
+        
+        String cached = chunkToExtensionCache.get(in);
+        
+        if (cached != null) {
+          return cached;
+        }
+        
         //dash removed as used in html comments
-        return stripFromWrapPattern.matcher(in).replaceAll(EMPTY);
+        String res = stripFromWrapPattern.matcher(in).replaceAll(EMPTY);
+        chunkToExtensionCache.put(in, res);
+        return res;
         //return in.replaceAll("[^a-zA-Z0-9_\\\\.]", EMPTY);
     }
     
@@ -383,8 +395,8 @@ public class MiniProcessorHelper {
     File _file = new File(file.getAbsolutePath() + TIL);
     
     if (file.exists()) {
-      if (isLog()) log("    Stripping from " + wrap);
-      //if (isLog()) log(">>> File DOES exist: " + file.getAbsolutePath());
+      if (isLog())log("    Stripping from " + wrap);
+      //if (isLog())log(">>> File DOES exist: " + file.getAbsolutePath());
       try {
         in = new BufferedReader(new FileReader(file));
         FileWriter fw = new FileWriter(_file);
@@ -394,21 +406,21 @@ public class MiniProcessorHelper {
         out.close();
         in.close();
         
-        if (isLog()) log(">>> Merged to: " + file.getAbsolutePath());
+        if (isLog())log(">>> Merged to: " + file.getAbsolutePath());
         
         if (!_file.renameTo(file)) {
           //lets try harder...
-          if (isLog()) log("Renaming failed (it may happen on some systems),"
+          if (isLog())log("Renaming failed (it may happen on some systems),"
                   + " directly copying over...");
           try {
-            if (isLog()) log("Copying " + _file.getAbsolutePath() + " to "
+            if (isLog())log("Copying " + _file.getAbsolutePath() + " to "
                     + file.getAbsolutePath());
             copyTo(_file, file);
           } catch (IOException e) {
             String msg = " Could not copy over the file nor delete tmp!"
                 + "\ntmp path:"+ _file.getAbsolutePath() + "\nreal: "
                 + file.getAbsolutePath();
-            log(e.getMessage());
+            if (isLog())log(e.getMessage());
             throw (new Exception(msg));
           }
         }
@@ -420,13 +432,13 @@ public class MiniProcessorHelper {
           in.close();
         }
         
-        if (isLog()) log("Cleaning. Deleting tmp file... " + _file.getAbsolutePath());
+        if (isLog())log("Cleaning. Deleting tmp file... " + _file.getAbsolutePath());
         
         _file.delete();
         _file = null;
       }
     } else {
-          if (isLog()) log(">>> File DOES NOT exist! Some of js files may"
+          if (isLog())log(">>> File DOES NOT exist! Some of js files may"
              + " point to dependencies that do not match -s and"
              + " --js-deps-prefix  directory! Use -vv and see whats missing."
              + "\n    File failed to open: "

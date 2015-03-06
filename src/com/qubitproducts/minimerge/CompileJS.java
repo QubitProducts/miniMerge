@@ -193,6 +193,7 @@ public class CompileJS {
         + "                   first entry from --source-base will be used ONLY."
         + "\n"
         + " --chunk-extensions array, comma separated custom extensions used for wraps.\n"
+        + " --only-cp Pass to make compilejs use only classpath baesed imports.\n"
         + "   Default: /*~css*/,/*~html*/,/*~" + JSTemplateProcessor.JS_TEMPLATE_NAME
                     + "*/  Those wrap definitions are used to take out\n"
         + "   chunks of file outside to output with extension defined by wrap keyword.\n"
@@ -268,6 +269,7 @@ public class CompileJS {
         boolean info = false;
         boolean help = false;
         boolean relative = true;
+        boolean onlyClasspath = false;
         boolean ignoreRJS = false;
         String src = null;
         List<String> sourceBase = new ArrayList<String>();
@@ -391,6 +393,8 @@ public class CompileJS {
                     defaltWraps = Arrays.asList(args[i++ + 1].split(","));
                 } else if (args[i].equals("--no-chunks")) {
                     defaltWraps = null;
+                } else if (args[i].equals("--only-cp")) {
+                  onlyClasspath = true;
                 }
 //                else if (args[i].equals("--html-output")) {
 //                    options.put("html-output", "true");
@@ -526,6 +530,7 @@ public class CompileJS {
             try {
                 out = new File(cwd, out).getAbsolutePath();
                 miniProcessor = new MiniProcessor();
+                miniProcessor.onlyClassPath(!onlyClasspath);
                 miniProcessor.setKeepLines(keepLines);
                 miniProcessor.setAssumeFilesExist(!fsExistsOption);
                 miniProcessor.setSourceBase(sourceBase.toArray(new String[0]));
