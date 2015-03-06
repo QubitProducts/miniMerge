@@ -20,5 +20,4 @@ public class JSWrapperProcessor implements Processor {
         chunks.add(0, new Object[]{"js", new StringBuilder("(function () {\n")});
         chunks.add(new Object[]{"js", new StringBuilder("\n}());\n")});
     }
-
 }

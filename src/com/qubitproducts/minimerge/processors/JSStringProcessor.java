@@ -18,7 +18,7 @@ public class JSStringProcessor implements Processor {
     String prefix;
     String suffix;
     String separator;
-    
+        
     public JSStringProcessor(
             String prefix,
             String suffix,

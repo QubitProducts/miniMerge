@@ -17,6 +17,8 @@
 
 package com.qubitproducts.minimerge;
 
+import static com.qubitproducts.minimerge.MiniProcessor.isLog;
+import static com.qubitproducts.minimerge.MiniProcessor.log;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -31,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 /**
  *
@@ -38,9 +41,10 @@ import java.util.logging.Logger;
  */
 public class MiniProcessorHelper {
   
-  public static void log (String msg) {
-    MiniProcessor.log(msg);
-  }
+  public static final String RET = "\n";
+  public static final String EMPTY = "";
+  public static final String TIL = "~";
+  public static final char TILC = '~';
   
   /**
    * Function strips file from wrapping strings.
@@ -50,30 +54,32 @@ public class MiniProcessorHelper {
    * @throws IOException
    * @throws Exception 
    */
-  public static void stripFileFromWraps(File file, String[] wraps)
+  public static void stripFileFromWraps(File file, String[] wraps, String replacement)
           throws FileNotFoundException, IOException, Exception {
     
     if (wraps == null || wraps.length == 0) return;
     
     List<String> lines = new ArrayList<String>();
-    BufferedReader reader = new BufferedReader(new FileReader(file));
+    BufferedReader reader = null;
+    
     try {
+      reader = new BufferedReader(new FileReader(file));
       String line = null;
       while ((line = reader.readLine()) != null) {
         lines.add(line);
       }
-      for (int i = 0; i < wraps.length; i++) {
-        lines = stripFromWrap(lines, wraps[i]);
+      for (String wrap : wraps) {
+        lines = stripFromWrap(lines, wrap, replacement);
       }
     } finally {
       if (reader != null) reader.close();
     }
     
-    BufferedWriter writer = 
-            new BufferedWriter(new FileWriter(file));
+    BufferedWriter writer = null;
     try {
-      for (int i = 0; i < lines.size(); i++) {
-        writer.write(lines.get(i) + "\n");
+      writer = new BufferedWriter(new FileWriter(file));
+      for (String line : lines) {
+        writer.write(line + RET);
       }
       writer.flush();
     } finally {
@@ -81,6 +87,9 @@ public class MiniProcessorHelper {
     }
   }
 
+  static private final Pattern stripFromWrapPattern = 
+      Pattern.compile("[^a-zA-Z0-9_\\\\.]");
+     
   /**
    * Function strips file from wrapping string.
    * String wrapping content must consist on ~ pattern,
@@ -90,13 +99,15 @@ public class MiniProcessorHelper {
    * @param reader
    * @param writer
    * @param wrap
+   * @param replacement
    * @throws IOException 
    */
   public static void stripFromWrap(BufferedReader reader,
                                    BufferedWriter writer,
-                                   String wrap) throws IOException {
+                                   String wrap,
+                                   String replacement) throws IOException {
     String line;
-    String start = wrap.replaceFirst("~", "");
+    String start = replaceFirstChar(wrap, TILC, null);
     String end = wrap;
     boolean ignore = false;
     while ((line = reader.readLine()) != null) {
@@ -105,11 +116,15 @@ public class MiniProcessorHelper {
       }
       if (!ignore) {
         writer.append(line);
+        writer.append(RET);
+      } else if (replacement != null) {
+        writer.append(replacement);
+        writer.append(RET);
       }
       if (end.length() > 0 && line.contains(end)) {
         ignore = false;
       }
-      writer.append("\n");
+      
     }
     writer.flush();
   }
@@ -127,11 +142,12 @@ public class MiniProcessorHelper {
             return null;
         }
         //dash removed as used in html comments
-        return in.replaceAll("[^a-zA-Z0-9_\\\\.]", "");
+        return stripFromWrapPattern.matcher(in).replaceAll(EMPTY);
+        //return in.replaceAll("[^a-zA-Z0-9_\\\\.]", EMPTY);
     }
     
     /**
-     * "" is a default output, when no wraps is 
+     * EMPTY is a default output, when no wraps is 
      * defined or blocks out of wraps.
      * Chunks names returned are the definitions used to close the block.
      * @param lines
@@ -146,7 +162,7 @@ public class MiniProcessorHelper {
                 String defaultExtension)
             throws IOException {
         if (defaultExtension == null) {
-            defaultExtension = "";
+            defaultExtension = EMPTY;
         }
         //chunks are the xxx~namexxx elements
         ArrayList<Object[]> chunks = new ArrayList<Object[]>();
@@ -157,9 +173,9 @@ public class MiniProcessorHelper {
 
         ArrayList<String[]> startingWraps = new ArrayList<String[]>();
         for (String wrap : wraps) {
-            if (wrap != null && !wrap.equals(""))
+            if (wrap != null && !wrap.equals(EMPTY))
             startingWraps.add(new String[]{
-                wrap.replaceFirst("~", ""),
+                replaceFirstChar(wrap, TILC, null),
                 wrap
             });
         }
@@ -185,13 +201,13 @@ public class MiniProcessorHelper {
                 if (isChunk) {
                     builder.append(line);
                     //if (i < size) {
-                        builder.append("\n");
+                        builder.append(RET);
                     //}
                 } else {
                     if (endingWrap == null) {
                         defaultBuilder.append(line);
                         //if (i < size) {
-                            defaultBuilder.append("\n");
+                            defaultBuilder.append(RET);
                         //}
                     } else {
                         isChunk = true;//from next line read builder
@@ -221,10 +237,30 @@ public class MiniProcessorHelper {
         return null;
     }
     
-  public static List<String> stripFromWrap(List<String> lines,
-                                   String wrap) throws IOException {
+    //@todo optimise
+    static public String replaceFirstChar(String string, char ch, String with) {
+      int len = string.length();
+      StringBuilder builder = new StringBuilder();
+      boolean found = false;
+      for (int i = 0; i < len; i++) {
+        char c = string.charAt(i);
+        if (!found || c != ch) {
+          builder.append(c);
+        } else {
+          found = true;
+          if (with != null) builder.append(with);
+        }
+      }
+      return builder.toString();
+    }
+    
+  public static List<String> stripFromWrap(
+                                  List<String> lines,
+                                  String wrap,
+                                  String replacement) throws IOException {
     ArrayList<String> result = new ArrayList<String>();
-    String start = wrap.replaceFirst("~", "");
+    
+    String start = replaceFirstChar(wrap, TILC, null);
     String end = wrap;
     boolean ignore = false;
     if (lines != null) for (String line : lines) {
@@ -233,13 +269,13 @@ public class MiniProcessorHelper {
       }
       if (!ignore) {
         result.add(line);
-      } else {
-        result.add("");
+      } else if (replacement != null) {
+        result.add(replacement);
       }
       if (end.length() > 0 && line.contains(end)) {
         ignore = false;
       }
-      //result.add("\n");
+      //result.add(RET);
     }
     return result;
   }
@@ -247,9 +283,10 @@ public class MiniProcessorHelper {
   
   public static void stripFromWrap(LineReader reader,
                                    BufferedWriter writer,
-                                   String wrap) throws IOException {
+                                   String wrap,
+                                   String replacement) throws IOException {
     String line;
-    String start = wrap.replaceFirst("~", "");
+    String start = replaceFirstChar(wrap, TILC, null);
     String end = wrap;
     boolean ignore = false;
     while ((line = reader.readLine()) != null) {
@@ -258,30 +295,49 @@ public class MiniProcessorHelper {
       }
       if (!ignore) {
         writer.append(line);
+      } else if (replacement != null) {
+        writer.append(replacement);
       }
       if (end.length() > 0 && line.contains(end)) {
         ignore = false;
       }
-      writer.append("\n");
+      writer.append(RET);
     }
     writer.flush();
   }
   
   /**
-   * Function stripping from wraps string buffers.
-   * String wrapping content must consist on ~ pattern,
-   * which translates to any starting A string can open wrapped context
-   * and any string with ~ that gives same A after replacing first ~ occurrence.
-   * @param reader
-   * @param writer
+   * 
+   * @param lines
    * @param wraps
+   * @param replacement
+   * @return
    * @throws IOException 
    */
+  public static List<String> stripFromWraps(List<String> lines, 
+                                  List<String> wraps,
+                                  String replacement) throws IOException {
+      for (String wrap : wraps) {
+        lines = stripFromWrap(lines, wrap, replacement);
+      }
+      return lines;
+  }
+  
+  public static List<String> stripFromWraps(List<String> lines, 
+                                  String[] wraps,
+                                  String replacement) throws IOException {
+      for (String wrap : wraps) {
+        lines = stripFromWrap(lines, wrap, replacement);
+      }
+      return lines;
+  }
+  
   public static void stripFromWraps(BufferedReader reader, 
                                     BufferedWriter writer, 
-                                    String[] wraps) throws IOException {
-    for (int i = 0; i < wraps.length; i++) {
-      stripFromWrap(reader, writer, wraps[i]);
+                                    String[] wraps,
+                                    String replacement) throws IOException {
+    for (String wrap : wraps) {
+      stripFromWrap(reader, writer, wrap, replacement);
     }
   }
   
@@ -320,32 +376,32 @@ public class MiniProcessorHelper {
    * @throws IOException
    * @throws Exception 
    */
-  public static void stripFileFromWrap(File file, String wrap)
+  public static void stripFileFromWrap(File file, String wrap, String replacement)
           throws FileNotFoundException, IOException, Exception {
     BufferedReader in = null;
     BufferedWriter out = null;
-    File _file = new File(file.getAbsolutePath() + "~");
+    File _file = new File(file.getAbsolutePath() + TIL);
     
     if (file.exists()) {
-      log("    Stripping from " + wrap);
-      //log(">>> File DOES exist: " + file.getAbsolutePath());
+      if (isLog()) log("    Stripping from " + wrap);
+      //if (isLog()) log(">>> File DOES exist: " + file.getAbsolutePath());
       try {
         in = new BufferedReader(new FileReader(file));
         FileWriter fw = new FileWriter(_file);
         out = new BufferedWriter(fw);
-        stripFromWrap(in, out, wrap);
+        stripFromWrap(in, out, wrap, replacement);
         
         out.close();
         in.close();
         
-        log(">>> Merged to: " + file.getAbsolutePath());
+        if (isLog()) log(">>> Merged to: " + file.getAbsolutePath());
         
         if (!_file.renameTo(file)) {
           //lets try harder...
-          log("Renaming failed (it may happen on some systems),"
+          if (isLog()) log("Renaming failed (it may happen on some systems),"
                   + " directly copying over...");
           try {
-            log("Copying " + _file.getAbsolutePath() + " to "
+            if (isLog()) log("Copying " + _file.getAbsolutePath() + " to "
                     + file.getAbsolutePath());
             copyTo(_file, file);
           } catch (IOException e) {
@@ -364,13 +420,13 @@ public class MiniProcessorHelper {
           in.close();
         }
         
-        log("Cleaning. Deleting tmp file... " + _file.getAbsolutePath());
+        if (isLog()) log("Cleaning. Deleting tmp file... " + _file.getAbsolutePath());
         
         _file.delete();
         _file = null;
       }
     } else {
-          log(">>> File DOES NOT exist! Some of js files may"
+          if (isLog()) log(">>> File DOES NOT exist! Some of js files may"
              + " point to dependencies that do not match -s and"
              + " --js-deps-prefix  directory! Use -vv and see whats missing."
              + "\n    File failed to open: "
@@ -392,14 +448,15 @@ public class MiniProcessorHelper {
     StringBuffer result = new StringBuffer();
 
     for (int i = 0; i < len; i++) {
-      if (string.charAt(i) == '>') {
+      char ch = string.charAt(i);
+      if (ch == '>') {
         end = i;
         break;
       }
       if (start >= 0 && end < 0) {
-        result.append(string.charAt(i));
+        result.append(ch);
       }
-      if (string.charAt(i) == '<') {
+      if (ch == '<') {
         start = i;
       }
     }
@@ -416,8 +473,8 @@ public class MiniProcessorHelper {
         HashMap<String, String> prefixes = new HashMap<String, String>();
         HashMap<String, String > suffixes = new HashMap<String, String>();
         
-        prefixes.put("", prefix);
-        suffixes.put("", suffix);
+        prefixes.put(EMPTY, prefix);
+        suffixes.put(EMPTY, suffix);
         
         return getPrefixScriptPathSuffixString(
             paths,
@@ -426,7 +483,11 @@ public class MiniProcessorHelper {
             appendSrcBase,
             unixStyle);
     }
-  
+//    static private final Pattern getPrefixScriptPathSuffixStringPattern = 
+//                                                        Pattern.compile("\\\\");
+    
+    static final char FSLSH = '/';
+    static final char SLSH = '\\';
     /**
      *
      * @param paths
@@ -446,14 +507,14 @@ public class MiniProcessorHelper {
       Iterator it = paths.keySet().iterator();
       String extension, pre = null, suf = null;
       
-      String defaultPrefix = prefixes.get("");
+      String defaultPrefix = prefixes.get(EMPTY);
       if (defaultPrefix == null) {
-          defaultPrefix = "";
+          defaultPrefix = EMPTY;
       }
       
-      String defaultSuffix = suffixes.get("");
+      String defaultSuffix = suffixes.get(EMPTY);
       if (defaultSuffix == null) {
-          defaultSuffix = "";
+          defaultSuffix = EMPTY;
       }
       
       while (it.hasNext()) {
@@ -489,7 +550,11 @@ public class MiniProcessorHelper {
       }
     
     if (File.separatorChar == '\\' && unixStyle) {
-      return builder.toString().replaceAll("\\\\", "/");
+      return builder.toString().replace(SLSH, FSLSH);
+//      return getPrefixScriptPathSuffixStringPattern
+//                    .matcher(builder.toString())
+//                        .replaceAll(FSLSH);
+      //return builder.toString().replaceAll("\\\\", FSLSH);
     }
     
     return builder.toString();
