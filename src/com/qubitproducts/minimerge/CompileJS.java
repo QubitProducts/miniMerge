@@ -530,7 +530,7 @@ public class CompileJS {
             try {
                 out = new File(cwd, out).getAbsolutePath();
                 miniProcessor = new MiniProcessor();
-                miniProcessor.onlyClassPath(!onlyClasspath);
+                miniProcessor.onlyClassPath(onlyClasspath);
                 miniProcessor.setKeepLines(keepLines);
                 miniProcessor.setAssumeFilesExist(!fsExistsOption);
                 miniProcessor.setSourceBase(sourceBase.toArray(new String[0]));
