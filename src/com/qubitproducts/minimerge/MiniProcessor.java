@@ -1099,6 +1099,7 @@ public class MiniProcessor {
   /**
    * Function getting dependencies map by using file as input.
    * 
+   * @param paths
    * @param path
    * @param relative if true, paths to be returned are relative (as is in deps)
    * @param output
@@ -1108,11 +1109,11 @@ public class MiniProcessor {
    */
   public LinkedHashMap<String, String>
           getFileDependenciesFromFile(
-              String path,
+              List<String> paths,
               boolean relative,
               String output)
           throws FileNotFoundException, IOException {
-    return getFilesListFromFile(path, relative, false, output);
+    return getFilesListFromFile(paths, relative, false, output);
   }
 
   public void clearCache () {
@@ -1120,12 +1121,14 @@ public class MiniProcessor {
     helpingMap.clear();
     dependenciesChecked.clear();
     existingFiles.clear();
+    prefixCacheForDetector.clear();
+    cannonicalFilesCache.clear();
   }
           
   /**
    * Function getting dependencies map by using file as input.
    * 
-   * @param path path to root file + base
+   * @param pathsToCheck
    * @param relative if true return relative "as is" paths values
    * @param ignoreDependencies if true, do not search for dependencies 
    * (it has sense to use if input path is a directory)
@@ -1135,7 +1138,7 @@ public class MiniProcessor {
    * @throws IOException
    */
   public LinkedHashMap<String, String> getFilesListFromFile(
-          String path,
+          List<String> pathsToCheck,
           boolean relative,
           boolean ignoreDependencies,
           String currentOutput)
@@ -1148,44 +1151,53 @@ public class MiniProcessor {
     LinkedHashMap<String, String> paths = new LinkedHashMap<String, String>();
     LinkedHashMap<String, String> excludes = new LinkedHashMap<String, String>();
     
-    File startingFile = new File(getCwd(), path);
-    List<File> files = MiniProcessor.listFilesTree(startingFile);
+    Map<String, List<File>> files = new HashMap<String, List<File>>();
+    List<String> sourceDirs = new ArrayList<String>(); // potential source bases
+    
+    for (String path : pathsToCheck) {
+      File startingFile = new File(getCwd(), path);
+      List<File> tmp = MiniProcessor.listFilesTree(startingFile);
+      files.put(path, tmp);
 
-    //is this not a directory???
-    boolean isFile = startingFile.isFile();
-    if (isFile) {
-      if (isLog())log(">>> Dealing with file and not a directory.");
-      startingFile = startingFile.getParentFile();
+      if (startingFile.isFile()) {
+        if (isLog()) {
+          log(">>> Dealing with file and not a directory.");
+        }
+        startingFile = startingFile.getParentFile();
+      }
+      sourceDirs.add(startingFile.getPath());
     }
 
     //check which match extensions set
-    for (int i = 0; i < files.size(); i++) {
-      File f = files.get(i);
-      if (!this.testIfFileIncluded(f)
-              || f.getCanonicalFile().getAbsolutePath().equals(currentOutput)) {
-        // do not include current startingFile
-        if (isLog())log("Excluded: " + f.getName());
-        files.remove(i--);
-      } else {
-        //if (isLog())log("Excluded NOT: " + files.get(i).getName());
+    for (String keySet : files.keySet()) {
+      List<File> tmp = files.get(keySet);
+      for (int i = 0; i < tmp.size(); i++) {
+        File f = tmp.get(i);
+        if (!this.testIfFileIncluded(f)
+            || f.getCanonicalFile().getAbsolutePath().equals(currentOutput)) {
+          // do not include current startingFile
+          if (isLog()) {
+            log("Excluded: " + f.getName() + " [src: " + keySet + " ]");
+          }
+          tmp.remove(i--);
+        } else {
+          //if (isLog())log("Excluded NOT: " + files.get(i).getName());
+        }
       }
     }
     
-    boolean checkIfFileExists = !this.isAssumeFilesExist();
     
+    boolean checkIfFileExists = !this.isAssumeFilesExist();
     String[] srcs = this.getSourceBase();
     
     //directory option with unspecified src dir
-    if (    (!isFile 
-              && srcs.length == 1 
-              && srcs[0].equals(EMPTY)) ||
-            (
-              srcs.length == 0
-            )
-       ) {
-      this.setSourceBase(new String[]{startingFile.getPath()});
+    if ((srcs.length == 1
+        && srcs[0] != null && srcs[0].trim().equals(EMPTY))
+        || (srcs.length == 0)) {
+      this.setSourceBase(sourceDirs.toArray(new String[]{}));
     }
 
+    
     if (isLog())log("Ignoring dependencies is set to: " + ignoreDependencies);
     if (isLog())log("All paths below (imported and raw) must match same prefix:");
 
@@ -1193,26 +1205,27 @@ public class MiniProcessor {
     
     //this is a hash ensuring that no file duplicates will occure in dependencies
     //@TODO check where it can be added
-    
-    for (File file : files) {
-      //if (isLog())log( files.get(i).getAbsolutePath());
-      String dependencyPath = file.getAbsolutePath();
-      //already in
-      if (this.dependenciesChecked.containsKey(dependencyPath)) {
-        continue;
+    for (String keySet : files.keySet()) {
+      List<File> tmp = files.get(keySet);
+      for (File file : tmp) {
+        //if (isLog())log( files.get(i).getAbsolutePath());
+        String dependencyPath = file.getAbsolutePath();
+        //already in
+        if (this.dependenciesChecked.containsKey(dependencyPath)) {
+          continue;
+        }
+        //dont process current path, if any dependencies chain contains it
+        this.dependenciesChecked.put(dependencyPath, null);
+        this.processFileDependencies(file,
+                paths,
+                excludes,
+                relative,
+                ignoreDependencies,
+                checkIfFileExists,
+                inputFileBaseDir, //starting dir!
+                null);
       }
-      //dont process current path, if any dependencies chain contains it
-      this.dependenciesChecked.put(dependencyPath, null);
-      this.processFileDependencies(file,
-              paths,
-              excludes,
-              relative,
-              ignoreDependencies,
-              checkIfFileExists,
-              inputFileBaseDir, //starting dir!
-              null);
     }
-
     if (ignoreDependencies) {
       if (isLog())log(">>> Dependencies includes ignored !");
     }
@@ -1238,7 +1251,7 @@ public class MiniProcessor {
           boolean relative,
           boolean ignoreDependencies,
           boolean checkIfFilesExists,
-          String sourceBase,
+          String dirBase,
           File from) throws IOException {
 //    file = file.getCanonicalFile();
     
@@ -1382,14 +1395,13 @@ public class MiniProcessor {
     }
 
     //Adding current file...
-    this.addOrExcludeFileFromPathsListSingle(
-            excludeThisFile,
+    this.addOrExcludeFileFromPathsListSingle(excludeThisFile,
             excludes,
             file,
             paths,
             relative,
             checkIfFilesExists,
-            sourceBase,
+            dirBase,
             from);
     return false;
   }
@@ -1410,6 +1422,9 @@ public class MiniProcessor {
   
   private final HashMap<String, Boolean> alreadyProcessed = new HashMap<String, Boolean>();
   
+  
+  Map<String, File> cannonicalFilesCache = new HashMap<String, File>();
+
   /**
    * Private function handling addng/queueing elements to the paths linked map.
    * It  also registers already excluded elements.
@@ -1435,19 +1450,40 @@ public class MiniProcessor {
           String dirBase,
           File from) throws IOException {
     
-    String tmp;
-    File srcBase = new File(getCwd(), dirBase); //or "." ?
-    //make sure we have straight paths (not a/b/../b/c for example)
-    //all relative paths are versus src base
-    srcBase = srcBase.getCanonicalFile();
+    //File originalFile = file;
     file = file.getCanonicalFile();
     String fileAbsPath = file.getAbsolutePath();
+
+    if (alreadyProcessed.containsKey(fileAbsPath)) {
+      return;
+    }
+    alreadyProcessed.put(fileAbsPath, true);
+    
+    String tmp;
+    File srcBase; //or "." ?
+    //cache
+    File found = cannonicalFilesCache.get(dirBase);
+    if (found != null) {
+      srcBase = found;
+    } else {
+      srcBase = new File(getCwd(), dirBase); //or "." ?
+      //make sure we have straight paths (not a/b/../b/c for example)
+      //all relative paths are versus src base
+      srcBase = srcBase.getCanonicalFile();
+      cannonicalFilesCache.put(dirBase, srcBase);
+    }
+    
     String prefix = srcBase.getAbsolutePath() + File.separator;
     
     if (excludeThisFile) {
       //dont add but queue it in excludes for future ignores
       if (relative) {
-        excludes.put(tmp = fileAbsPath.replace(prefix, EMPTY), dirBase);
+        Object[] results
+            = detectDirectoryPrefix(fileAbsPath, srcBase, dirBase, prefix);
+        tmp = (String) results[0];
+        dirBase = (String) results[1];
+//        prefix = (String) results[2]; //never used
+        excludes.put(tmp, dirBase);
       } else {
         excludes.put(tmp = fileAbsPath, dirBase);
       }
@@ -1462,16 +1498,14 @@ public class MiniProcessor {
       }
       
       if (addToPaths) {
-        if (alreadyProcessed.containsKey(fileAbsPath)) {
-          return;
-        } else {
-          alreadyProcessed.put(fileAbsPath, true);
-        }
-        
         String path = null;
         
         if (relative) {
-          path = fileAbsPath.replace(prefix, EMPTY);
+          Object[] results = 
+              detectDirectoryPrefix(fileAbsPath, srcBase, dirBase, prefix);
+          path = (String) results[0];
+          dirBase = (String) results[1];
+          prefix = (String) results[2];
         } else {
           path = fileAbsPath;
         }
@@ -1513,7 +1547,46 @@ public class MiniProcessor {
       }
     }
   }
-
+  
+  Map<String, String> prefixCacheForDetector = new HashMap<String, String>();
+  /*
+   * Useful at index generation.
+   * @param fileAbsPath
+   * @param srcBase
+   * @param dirBase
+   * @param prefix
+   * @return
+   * @throws IOException 
+   */
+  private Object[] detectDirectoryPrefix (
+      String fileAbsPath,
+      File srcBase,
+      String dirBase,
+      String prefix) throws IOException {
+    //optimisticly ends here
+    String path = fileAbsPath.replace(prefix, EMPTY);
+    if (fileAbsPath.equals(path)) {
+      for (String item : this.getSourceBase()) {
+        String found = prefixCacheForDetector.get(item);
+        String nprefix;
+        if (found != null) {
+          nprefix = found;
+        } else {
+          srcBase = new File(getCwd(), item).getCanonicalFile();
+          nprefix = srcBase.getAbsolutePath() + File.separator;
+          prefixCacheForDetector.put(item, nprefix);
+        }
+        
+        path = fileAbsPath.replace(nprefix, EMPTY);
+        if (!fileAbsPath.equals(path)) {
+          dirBase = item;
+          prefix = nprefix;
+          break;
+        }
+      }
+    }
+    return new Object[]{path, dirBase, prefix};
+  }
   /**
    * Function adding path with base dir to the specified map of paths.
    * It will check if it is contained by excludes map and ignore it 

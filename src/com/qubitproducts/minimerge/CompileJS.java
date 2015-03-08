@@ -271,7 +271,9 @@ public class CompileJS {
         boolean relative = true;
         boolean onlyClasspath = false;
         boolean ignoreRJS = false;
-        String src = null;
+        String srcString = null;
+        ArrayList<String> pathsList = new ArrayList<String>();
+
         List<String> sourceBase = new ArrayList<String>();
         String linesToExclude = null;
         String filesToExclude = null;
@@ -316,7 +318,7 @@ public class CompileJS {
                 } else if (args[i].equals("-o")) {
                     out = args[i++ + 1];
                 } else if (args[i].equals("-s")) {
-                    src = args[i++ + 1];
+                    srcString = args[i++ + 1];
                 } else if (args[i].equals("--parse-only-first-comment-dependencies")) {
                     parseOnlyFirstComments = true;
                 } else if (args[i].equals("--source-base")) {
@@ -425,34 +427,50 @@ public class CompileJS {
             suffixPerExtension.put("js", defaultSuffix + "\n"); //clean up defaults
         }
         
-        if (src == null) {
-            src = ".";
-        }
-
-        if (cwd != null) {
-            cwd = new File(cwd).getCanonicalPath();
-            if (src.startsWith(cwd)) {
-                src = src.substring(cwd.length());
-                while(src.startsWith(File.separator)) {
-                    src = src.substring(1);
-                }
-            }
+        if (srcString == null) {
+          srcString = ".";
         }
         
-        File srcFile = new File(cwd, src);
-       
-        if (!srcFile.exists()) {
-            throw new Exception("File: " + 
-                srcFile.getAbsolutePath() + 
-                "Does not exist. \nPlease check your configutration.");
+        String[] sourceFiles = srcString.split(",");
+        for (String tmp : sourceFiles) {
+          pathsList.add(tmp);
         }
+        
+        if (cwd != null) {
+          cwd = new File(cwd).getCanonicalPath();
+        }
+        boolean dotAdded = false; 
+        //sources preparation
+        for (String src : sourceFiles) {
+          if (src.equals("")) {
+            continue;
+          }
 
-        if (sourceBase.isEmpty()) {
-            if (srcFile.isFile()) {
-                sourceBase.add(".");
-            } else {
-                sourceBase.add(src);
+          if (cwd != null) {
+            if (src.startsWith(cwd)) {
+              src = src.substring(cwd.length());
+              while (src.startsWith(File.separator)) {
+                src = src.substring(1);
+              }
             }
+          }
+
+          File srcFile = new File(cwd, src);
+
+          if (!srcFile.exists()) {
+            throw new Exception("File: "
+                + srcFile.getAbsolutePath()
+                + "Does not exist. \nPlease check your configutration.");
+          }
+
+          if (sourceBase.isEmpty()) {
+            if (srcFile.isFile()) {
+              if (!dotAdded) sourceBase.add(".");
+              dotAdded = true;
+            } else {
+              sourceBase.add(src);
+            }
+          }
         }
 
         if (filesIncluded == null) {
@@ -472,13 +490,18 @@ public class CompileJS {
         }
         
         if (info) {
+            String tmpPaths = "\n";
+            for (String tmp : pathsList) {
+                tmpPaths += "\t" + new File(cwd, tmp).getPath() + "\n";
+            }
+          
             ps.println(
                 " miniMERGE config selected:");
             ps.println("  -i  Included file types: " + filesIncluded
                 + "\n  -o  Output: "
                 + (out == null ? "null" : 
                     (new File(cwd, out)).getAbsolutePath() + ".EXT")
-                + "\n  -s  Src dir: " + new File(cwd,src).getPath()
+                + "\n  -s  Src dir: " + tmpPaths
                 + "\n  -ir Ignoring RequireJS: " + (ignoreRJS ? "yes" : "no")
                 + "\n  -nd No dependencies: " + (!dependencies)
                 + "\n  -v  Verbosive: " + (verbose ? "yes" : "no")
@@ -563,7 +586,7 @@ public class CompileJS {
 
                 Map<String, String> paths = miniProcessor
                     .getFilesListFromFile(
-                        src,
+                        pathsList,
                         relative,
                         !dependencies,
                         out);

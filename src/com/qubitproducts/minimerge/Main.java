@@ -447,10 +447,13 @@ public class Main {
         if (parseOnlyFirstComments) {
           miniProcessor.setCheckEveryLine(false);
         }
-
+        ArrayList<String> tmp = 
+            new ArrayList<String>();
+        tmp.add(src);
+        
         Map<String, String> paths = miniProcessor
                 .getFilesListFromFile(
-                    src,
+                    tmp,
                     relative,
                     !dependencies,
                     out);
