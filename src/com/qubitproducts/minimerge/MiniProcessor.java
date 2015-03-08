@@ -1453,7 +1453,7 @@ public class MiniProcessor {
     //File originalFile = file;
     file = file.getCanonicalFile();
     String fileAbsPath = file.getAbsolutePath();
-
+    
     if (alreadyProcessed.containsKey(fileAbsPath)) {
       return;
     }

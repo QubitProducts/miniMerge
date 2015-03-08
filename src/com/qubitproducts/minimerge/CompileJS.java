@@ -251,7 +251,8 @@ public class CompileJS {
      * @throws java.io.IOException
      */
     public static void main(String[] args) throws IOException, Exception {
-        new CompileJS().compile(args);
+      //add prop file reading
+      new CompileJS().compile(args);
         LineReader.clearCache();
     }
     
@@ -271,7 +272,7 @@ public class CompileJS {
         boolean relative = true;
         boolean onlyClasspath = false;
         boolean ignoreRJS = false;
-        String srcString = null;
+        String srcString = ".";
         ArrayList<String> pathsList = new ArrayList<String>();
 
         List<String> sourceBase = new ArrayList<String>();
@@ -307,7 +308,7 @@ public class CompileJS {
         MiniProcessor miniProcessor = null;
         HashMap<String, String> options = new HashMap<String, String>();
         String eol = "\n";
-        
+                
         try {
             for (int i = 0; i < args.length; i++) {
                 if (args[i].equals("-i")) {
@@ -319,6 +320,10 @@ public class CompileJS {
                     out = args[i++ + 1];
                 } else if (args[i].equals("-s")) {
                     srcString = args[i++ + 1];
+                    String[] sourceFiles = srcString.split(",");
+                    for (String tmp : sourceFiles) {
+                      pathsList.add(tmp);
+                    }
                 } else if (args[i].equals("--parse-only-first-comment-dependencies")) {
                     parseOnlyFirstComments = true;
                 } else if (args[i].equals("--source-base")) {
@@ -427,21 +432,14 @@ public class CompileJS {
             suffixPerExtension.put("js", defaultSuffix + "\n"); //clean up defaults
         }
         
-        if (srcString == null) {
-          srcString = ".";
-        }
-        
-        String[] sourceFiles = srcString.split(",");
-        for (String tmp : sourceFiles) {
-          pathsList.add(tmp);
-        }
-        
         if (cwd != null) {
           cwd = new File(cwd).getCanonicalPath();
         }
         boolean dotAdded = false; 
         //sources preparation
-        for (String src : sourceFiles) {
+        
+        List<String> cleanedPaths = new ArrayList<String>();
+        for (String src : pathsList) {
           if (src.equals("")) {
             continue;
           }
@@ -471,6 +469,7 @@ public class CompileJS {
               sourceBase.add(src);
             }
           }
+          cleanedPaths.add(src);
         }
 
         if (filesIncluded == null) {
@@ -491,7 +490,7 @@ public class CompileJS {
         
         if (info) {
             String tmpPaths = "\n";
-            for (String tmp : pathsList) {
+            for (String tmp : cleanedPaths) {
                 tmpPaths += "\t" + new File(cwd, tmp).getPath() + "\n";
             }
           
@@ -586,7 +585,7 @@ public class CompileJS {
 
                 Map<String, String> paths = miniProcessor
                     .getFilesListFromFile(
-                        pathsList,
+                        cleanedPaths,
                         relative,
                         !dependencies,
                         out);
