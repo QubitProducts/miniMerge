@@ -256,6 +256,8 @@ public class CompileJS {
         LineReader.clearCache();
     }
     
+    
+    
     public long compile(String[] args) throws IOException, Exception {
 
         boolean exit = false;
@@ -334,6 +336,12 @@ public class CompileJS {
                             sourceBase.add(path);
                         }
                     }
+                } else if (args[i].equals("-cp")) {
+                  String cp = args[i++ + 1];
+                  String path = cp.trim();
+                  if (!path.equals("")) {
+                      sourceBase.add(path);
+                  }
                 } else if (args[i].equals("--info")) {
                     info = true;
                 } else if (args[i].equals("-nd")) {
@@ -671,14 +679,14 @@ public class CompileJS {
                 Logger.getLogger(CompileJS.class.getName()).log(Level.SEVERE, null, ex);
             } finally {
                 LineReader.clearCache();
+                if (miniProcessor != null) {
+                  miniProcessor.clearCache();
+                }
             }
         }
         
         done = System.nanoTime() - start;
         
-        if (miniProcessor != null) {
-          miniProcessor.clearCache();
-        }
         
         if (info) {
             ps.println("Done in: "
