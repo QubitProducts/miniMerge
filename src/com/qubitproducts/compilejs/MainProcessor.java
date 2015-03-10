@@ -1,22 +1,25 @@
 /*
  *  Copyright 2013 @ QubitProducts.com
  *
- *  CompileJS is free software: you can redistribute it and/or modify
- *  it under the terms of the Lesser GNU General Public License as published by
+ *  MiniMerge is free software: you can redistribute allPaths and/or modify
+ *  allPaths under the terms of the Lesser GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  CompileJS is distributed in the hope that it will be useful,
+ *  MiniMerge is distributed in the hope that allPaths will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  Lesser GNU General Public License for more details.
  *
  *  You should have received a copy of the Lesser GNU General Public License.
  *  If not, see LGPL licence at http://www.gnu.org/licenses/lgpl-3.0.html.
+ *
+ *  @author Peter (Piotr) Fronc 
  */
-package com.qubitproducts.minimerge;
 
-import static com.qubitproducts.minimerge.MiniProcessorHelper.chunkToExtension;
+package com.qubitproducts.compilejs;
+
+import static com.qubitproducts.compilejs.MainProcessorHelper.chunkToExtension;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -26,7 +29,6 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.nio.CharBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -36,13 +38,12 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-import javax.swing.text.Segment;
 
 /**
  *
  * @author Peter (Piotr) Fronc <peter.fronc@qubitproducts.com>
  */
-public class MiniProcessor {
+public class MainProcessor {
   
   public static final String RET = "\n";
   public static final String EMPTY = "";
@@ -85,6 +86,22 @@ public class MiniProcessor {
           ch == '_';
   }
   
+  static public boolean isClasspath(String string) {
+    if (string == null) return false;
+    
+    if (!classPathChar(string.charAt(0)) 
+        || (string.charAt(0) == '_')) {
+      return false;
+    }
+    
+    for (int i = 1; i < string.length(); i++) {
+      if (!classPathChar(string.charAt(0))) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
   
   static public String translateClassPath(String path) {
     int len = path.length();
@@ -157,7 +174,7 @@ public class MiniProcessor {
   private boolean keepLines = true;
   
   private static final Logger LOGGER =
-          Logger.getLogger(MiniProcessor.class.getName());
+          Logger.getLogger(MainProcessor.class.getName());
   static public LogLevel LOG_LEVEL = LogLevel.DEFAULT;
 
   /*
@@ -347,7 +364,7 @@ public class MiniProcessor {
             addedPath[0] = getNormalPath(line, true);
             addedPath[1] = Types.INCLUDE;
           } else if ((!isIgnoreRequire()) && (line.startsWith(reqPrefix))) {
-            addedPath[0] = MiniProcessorHelper.getRequirePath(line) + dotJS;
+            addedPath[0] = MainProcessorHelper.getRequirePath(line) + dotJS;
             addedPath[1] = Types.REQUIRE;
           } else {
             return null;
@@ -660,7 +677,7 @@ public class MiniProcessor {
    *
    * @param output java.lang.String path to output file
    */
-  public MiniProcessor() {
+  public MainProcessor() {
     this.ignores = this.onlyClassPath() ? IGNORE_CLASSPATH : IGNORE;
     this.mergeOnly = EXT_TO_MERGE;
     this.fromToIgnore = FROM_TO_IGNORE;
@@ -764,7 +781,7 @@ public class MiniProcessor {
     StringWriter sw = new StringWriter();
     BufferedWriter bw = new BufferedWriter(sw);
     try {
-      MiniProcessorHelper.stripFromWraps(sr, bw, this.getFromToIgnore(),
+      MainProcessorHelper.stripFromWraps(sr, bw, this.getFromToIgnore(),
           isKeepLines() ? EMPTY : null);
       StringBuffer ret = sw.getBuffer();
       return ret;
@@ -800,16 +817,16 @@ public class MiniProcessor {
         
         try {
             if (isLog())log(">>> Stripping file: " + outputFile);
-            MiniProcessorHelper
+            MainProcessorHelper
                 .stripFileFromWraps(new File(outputFile),
                     this.getFromToIgnore(),
                     isKeepLines() ? EMPTY : null);
             
         } catch (FileNotFoundException ex) {
-            Logger.getLogger(MiniProcessor.class.getName())
+            Logger.getLogger(MainProcessor.class.getName())
                 .log(Level.SEVERE, null, ex);
         } catch (Exception ex) {
-            Logger.getLogger(MiniProcessor.class.getName())
+            Logger.getLogger(MainProcessor.class.getName())
                 .log(Level.SEVERE, null, ex);
         }
     }
@@ -961,28 +978,28 @@ public class MiniProcessor {
             defaultExtension = EMPTY;
         }
         
-        Iterator<String> it = paths.keySet().iterator();
+        Iterator<String> allPaths = paths.keySet().iterator();
                 
         Map<String, StringBuilder> allChunks =
             new HashMap<String, StringBuilder>();
         
-        while (it.hasNext()) {
-            String item = it.next();
-            String dirBase = paths.get(item);
+        while (allPaths.hasNext()) {
+            String currentPath = allPaths.next();
+            String dirBase = paths.get(currentPath);
 
             dirBase = new File(this.getCwd(), dirBase).getAbsolutePath();
-            if (isLog())logVeryVerbosive(">>> Dir Base + Path : " + dirBase + " --> " + item);
+            if (isLog())logVeryVerbosive(">>> Dir Base + Path : " + dirBase + " --> " + currentPath);
             LineReader in = null;
             String topDir = this.getTopAbsoluteParent(dirBase);
             String pathPrefix;
 
-            if (item.startsWith(topDir)) {
+            if (currentPath.startsWith(topDir)) {
                 pathPrefix = EMPTY;
             } else {
                 pathPrefix = dirBase;
             }
             //no Cwd here!
-            File file = new File(pathPrefix + File.separator + item);
+            File file = new File(pathPrefix, currentPath);
 
             if (file.getCanonicalFile().getAbsolutePath()
                 .equals(outputName)) {
@@ -1005,13 +1022,13 @@ public class MiniProcessor {
                         }
                     }
                     
-                    lines = MiniProcessorHelper
+                    lines = MainProcessorHelper
                             .stripFromWraps(lines,
                                 this.getFromToIgnore(),
                                 isKeepLines() ? EMPTY : null);
                     
                     List<Object[]> chunks = 
-                        MiniProcessorHelper
+                        MainProcessorHelper
                             .getFileInChunks(lines, wraps, defaultExtension);
                     
                     int idx = file.getName().lastIndexOf('.') + 1;
@@ -1131,7 +1148,7 @@ public class MiniProcessor {
    * @param pathsToCheck
    * @param relative if true return relative "as is" paths values
    * @param ignoreDependencies if true, do not search for dependencies 
-   * (it has sense to use if input path is a directory)
+ (allPaths has sense to use if input path is a directory)
    * @param currentOutput
    * @return
    * @throws FileNotFoundException
@@ -1156,7 +1173,7 @@ public class MiniProcessor {
     
     for (String path : pathsToCheck) {
       File startingFile = new File(getCwd(), path);
-      List<File> tmp = MiniProcessor.listFilesTree(startingFile);
+      List<File> tmp = MainProcessor.listFilesTree(startingFile);
       files.put(path, tmp);
 
       if (startingFile.isFile()) {
@@ -1204,7 +1221,7 @@ public class MiniProcessor {
     String inputFileBaseDir = this.getSourceBase()[0];
     
     //this is a hash ensuring that no file duplicates will occure in dependencies
-    //@TODO check where it can be added
+    //@TODO check where allPaths can be added
     for (String keySet : files.keySet()) {
       List<File> tmp = files.get(keySet);
       for (File file : tmp) {
@@ -1214,7 +1231,7 @@ public class MiniProcessor {
         if (this.dependenciesChecked.containsKey(dependencyPath)) {
           continue;
         }
-        //dont process current path, if any dependencies chain contains it
+        //dont process current path, if any dependencies chain contains allPaths
         this.dependenciesChecked.put(dependencyPath, null);
         this.processFileDependencies(file,
                 paths,
@@ -1316,7 +1333,7 @@ public class MiniProcessor {
             for (String[] depsItem : dependenciesPathsObjects) {
                 String[] dependenciesPaths = depsItem;
                 //@TODO    add extension check also to included dependencies - OR
-                // maybe leav it and dependencies should not be filtered:
+                // maybe leav allPaths and dependencies should not be filtered:
                 //        this.testIfFileIncluded(files.get(i))
                 if (isLog())logVeryVerbosive(
                     this.getCurrentIndent() + dependenciesPaths[0]
@@ -1476,7 +1493,7 @@ public class MiniProcessor {
     String prefix = srcBase.getAbsolutePath() + File.separator;
     
     if (excludeThisFile) {
-      //dont add but queue it in excludes for future ignores
+      //dont add but queue allPaths in excludes for future ignores
       if (relative) {
         Object[] results
             = detectDirectoryPrefix(fileAbsPath, srcBase, dirBase, prefix);
@@ -1589,8 +1606,8 @@ public class MiniProcessor {
   }
   /**
    * Function adding path with base dir to the specified map of paths.
-   * It will check if it is contained by excludes map and ignore it 
-   * if contained.
+   * It will check if allPaths is contained by excludes map and ignore allPaths 
+ if contained.
    * @param where
    * @param path
    * @param excludes

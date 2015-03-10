@@ -1,12 +1,31 @@
-package com.qubitproducts.minimerge.processors;
+/*
+ *  Copyright 2013 @ QubitProducts.com
+ *
+ *  MiniMerge is free software: you can redistribute it and/or modify
+ *  it under the terms of the Lesser GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  MiniMerge is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  Lesser GNU General Public License for more details.
+ *
+ *  You should have received a copy of the Lesser GNU General Public License.
+ *  If not, see LGPL licence at http://www.gnu.org/licenses/lgpl-3.0.html.
+ *
+ *  @author Peter (Piotr) Fronc 
+ */
 
-import com.qubitproducts.minimerge.Processor;
-import static com.qubitproducts.minimerge.MiniProcessorHelper.chunkToExtension;
+
+package com.qubitproducts.compilejs.processors;
+
+import com.qubitproducts.compilejs.Processor;
+import static com.qubitproducts.compilejs.MainProcessorHelper.chunkToExtension;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -14,13 +33,13 @@ import java.util.logging.Logger;
  *
  * @author piotr
  */
-public class JSTemplateProcessor implements Processor {
-    public static String JS_TEMPLATE_NAME = "js.template";
+public class JSStringProcessor implements Processor {
+    public static String JS_TEMPLATE_NAME = "js.string";
     String prefix;
     String suffix;
     String separator;
-    
-    public JSTemplateProcessor(
+        
+    public JSStringProcessor(
             String prefix,
             String suffix,
             String separator) {
@@ -56,7 +75,7 @@ public class JSTemplateProcessor implements Processor {
                     chunk[0] = "js";
                     chunk[1] = builder;
                 } catch (IOException ex) {
-                    Logger.getLogger(JSTemplateProcessor.class.getName())
+                    Logger.getLogger(JSStringProcessor.class.getName())
                         .log(Level.SEVERE, null, ex);
                 }
             }

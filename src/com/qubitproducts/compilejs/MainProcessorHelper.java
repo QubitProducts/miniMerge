@@ -1,24 +1,27 @@
 /*
  *  Copyright 2013 @ QubitProducts.com
  *
- *  CompileJS is free software: you can redistribute it and/or modify
+ *  MiniMerge is free software: you can redistribute it and/or modify
  *  it under the terms of the Lesser GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  CompileJS is distributed in the hope that it will be useful,
+ *  MiniMerge is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  Lesser GNU General Public License for more details.
  *
  *  You should have received a copy of the Lesser GNU General Public License.
  *  If not, see LGPL licence at http://www.gnu.org/licenses/lgpl-3.0.html.
+ *
+ *  @author Peter (Piotr) Fronc 
  */
 
-package com.qubitproducts.minimerge;
 
-import static com.qubitproducts.minimerge.MiniProcessor.isLog;
-import static com.qubitproducts.minimerge.MiniProcessor.log;
+package com.qubitproducts.compilejs;
+
+import static com.qubitproducts.compilejs.MainProcessor.isLog;
+import static com.qubitproducts.compilejs.MainProcessor.log;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -39,7 +42,7 @@ import java.util.regex.Pattern;
  *
  * @author Peter (Piotr) Fronc <peter.fronc@qubitproducts.com>
  */
-public class MiniProcessorHelper {
+public class MainProcessorHelper {
   
   public static final String RET = "\n";
   public static final String EMPTY = "";
@@ -182,7 +185,8 @@ public class MiniProcessorHelper {
         StringBuilder defaultBuilder = new StringBuilder();
         StringBuilder builder = new StringBuilder();
         String endingWrap = null;
-
+        
+        //prepare wraps
         ArrayList<String[]> startingWraps = new ArrayList<String[]>();
         for (String wrap : wraps) {
             if (wrap != null && !wrap.equals(EMPTY))
@@ -256,11 +260,13 @@ public class MiniProcessorHelper {
       boolean found = false;
       for (int i = 0; i < len; i++) {
         char c = string.charAt(i);
-        if (!found || c != ch) {
+        if (found || c != ch) {
           builder.append(c);
         } else {
           found = true;
-          if (with != null) builder.append(with);
+          if (with != null) {
+            builder.append(with);
+          }
         }
       }
       return builder.toString();
@@ -370,7 +376,7 @@ public class MiniProcessorHelper {
         out.write(character);
       }
     } catch (FileNotFoundException ex) {
-      Logger.getLogger(MiniProcessorHelper.class.getName()).log(Level.SEVERE, null, ex);
+      Logger.getLogger(MainProcessorHelper.class.getName()).log(Level.SEVERE, null, ex);
     } finally {
       if(in != null) in.close();
       if(out != null) out.close();

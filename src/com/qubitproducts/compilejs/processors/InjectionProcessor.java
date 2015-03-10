@@ -1,9 +1,29 @@
-package com.qubitproducts.minimerge.processors;
+/*
+ *  Copyright 2013 @ QubitProducts.com
+ *
+ *  MiniMerge is free software: you can redistribute it and/or modify
+ *  it under the terms of the Lesser GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  MiniMerge is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  Lesser GNU General Public License for more details.
+ *
+ *  You should have received a copy of the Lesser GNU General Public License.
+ *  If not, see LGPL licence at http://www.gnu.org/licenses/lgpl-3.0.html.
+ *
+ *  @author Peter (Piotr) Fronc 
+ */
 
-import com.qubitproducts.minimerge.LineReader;
-import com.qubitproducts.minimerge.MiniProcessor;
-import com.qubitproducts.minimerge.Processor;
-import static com.qubitproducts.minimerge.MiniProcessorHelper.chunkToExtension;
+
+package com.qubitproducts.compilejs.processors;
+
+import com.qubitproducts.compilejs.LineReader;
+import com.qubitproducts.compilejs.MainProcessor;
+import com.qubitproducts.compilejs.Processor;
+import static com.qubitproducts.compilejs.MainProcessorHelper.chunkToExtension;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -20,14 +40,14 @@ public class InjectionProcessor implements Processor {
     String prefix = "";
     String suffix = "";
     String INJECT_STR = "//:inject";
-    private MiniProcessor mprocessor;
+    private MainProcessor mprocessor;
     
     private boolean replacingLine = false;
     
     public InjectionProcessor(){
         super();
     };    
-    public InjectionProcessor(MiniProcessor mprocessor){
+    public InjectionProcessor(MainProcessor mprocessor){
         super();
         this.mprocessor = mprocessor;
     };
@@ -63,7 +83,7 @@ public class InjectionProcessor implements Processor {
                             int j = 1;
                             
                             String path = 
-                                MiniProcessor.translateClassPath(parts[j]) 
+                                MainProcessor.translateClassPath(parts[j]) 
                                   + ".js";
                             
                             while(path == null || path.trim().equals("")) {

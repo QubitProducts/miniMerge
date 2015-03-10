@@ -14,17 +14,16 @@
  *  You should have received a copy of the Lesser GNU General Public License.
  *  If not, see LGPL licence at http://www.gnu.org/licenses/lgpl-3.0.html.
  */
-package com.qubitproducts.minimerge;
+package com.qubitproducts.compilejs;
 
-import com.qubitproducts.minimerge.processors.JSWrapperProcessor;
-import com.qubitproducts.minimerge.processors.JSTemplateProcessor;
-import com.qubitproducts.minimerge.processors.JSStringProcessor;
-import com.qubitproducts.minimerge.MiniProcessor.LogLevel;
-import static com.qubitproducts.minimerge.MiniProcessorHelper.chunkToExtension;
-import com.qubitproducts.minimerge.processors.InjectionProcessor;
+import com.qubitproducts.compilejs.processors.JSWrapperProcessor;
+import com.qubitproducts.compilejs.processors.JSTemplateProcessor;
+import com.qubitproducts.compilejs.processors.JSStringProcessor;
+import com.qubitproducts.compilejs.MainProcessor.LogLevel;
+import static com.qubitproducts.compilejs.MainProcessorHelper.chunkToExtension;
+import com.qubitproducts.compilejs.processors.InjectionProcessor;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -34,7 +33,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -252,8 +250,13 @@ public class CompileJS {
      */
     public static void main(String[] args) throws IOException, Exception {
       //add prop file reading
-      new CompileJS().compile(args);
+      try{
+        new CompileJS().compile(args);
+      } catch (Exception e) {
+        LOGGER.severe("Error. " + e.getMessage());
+      } finally {
         LineReader.clearCache();
+      }
     }
     
     
@@ -307,7 +310,7 @@ public class CompileJS {
             "/*~" + JSStringProcessor.JS_TEMPLATE_NAME + "*/"
         });
 
-        MiniProcessor miniProcessor = null;
+        MainProcessor miniProcessor = null;
         HashMap<String, String> options = new HashMap<String, String>();
         String eol = "\n";
                 
@@ -443,9 +446,19 @@ public class CompileJS {
         if (cwd != null) {
           cwd = new File(cwd).getCanonicalPath();
         }
+        
+        //validate and refresh out
+        if (cwd != null && out != null) {
+          if (out.startsWith(cwd)) {
+            out = out.substring(cwd.length());
+            while (out.startsWith(File.separator)) {
+              out = out.substring(1);
+            }
+          }
+        }
+        
         boolean dotAdded = false; 
         //sources preparation
-        
         List<String> cleanedPaths = new ArrayList<String>();
         for (String src : pathsList) {
           if (src.equals("")) {
@@ -559,7 +572,7 @@ public class CompileJS {
         if (out != null) {
             try {
                 out = new File(cwd, out).getAbsolutePath();
-                miniProcessor = new MiniProcessor();
+                miniProcessor = new MainProcessor();
                 miniProcessor.onlyClassPath(onlyClasspath);
                 miniProcessor.setKeepLines(keepLines);
                 miniProcessor.setAssumeFilesExist(!fsExistsOption);
@@ -580,7 +593,7 @@ public class CompileJS {
                 miniProcessor.setFromToIgnore(wrapsToExclude.split(","));
 
                 if (!verbose) {
-                    MiniProcessor.LOG_LEVEL = LogLevel.NONE;
+                    MainProcessor.LOG_LEVEL = LogLevel.NONE;
                 }
 
                 if (vverbose) {
@@ -601,7 +614,7 @@ public class CompileJS {
                 log("Writing results...\n");
 
                 if (generateIndex) {
-                    String result = MiniProcessorHelper
+                    String result = MainProcessorHelper
                         .getPrefixScriptPathSuffixString(
                             paths,
                             prefixPerExtension,
@@ -673,33 +686,34 @@ public class CompileJS {
                     ps.println("Heap: " + Runtime.getRuntime().totalMemory() / 1024 / 1024
                         + "MB\n");
                 }
-            } catch (FileNotFoundException ex) {
-                Logger.getLogger(CompileJS.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (IOException ex) {
-                Logger.getLogger(CompileJS.class.getName()).log(Level.SEVERE, null, ex);
+//            } catch (FileNotFoundException ex) {
+//                Logger.getLogger(CompileJS.class.getName()).log(Level.SEVERE, null, ex);
+//            } catch (IOException ex) {
+//                Logger.getLogger(CompileJS.class.getName()).log(Level.SEVERE, null, ex);
             } finally {
                 LineReader.clearCache();
                 if (miniProcessor != null) {
                   miniProcessor.clearCache();
                 }
+                
+                done = System.nanoTime() - start;
+        
+                if (info) {
+                    ps.println("Done in: "
+                                + ((float) done / 1000000000.0 )
+                                + "s");
+                }
             }
         }
         
-        done = System.nanoTime() - start;
         
-        
-        if (info) {
-            ps.println("Done in: "
-                        + ((float) done / 1000000000.0 )
-                        + "s");
-        }
         
         return done;
     }
     
     private static void processPerExtensions(
         Map<String, String> paths,
-        MiniProcessor miniProcessor,
+        MainProcessor miniProcessor,
         String out,
         Map<String, String> options,
         List<String> wraps)

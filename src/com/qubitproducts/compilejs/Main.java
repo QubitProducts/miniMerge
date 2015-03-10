@@ -13,11 +13,13 @@
  *
  *  You should have received a copy of the Lesser GNU General Public License.
  *  If not, see LGPL licence at http://www.gnu.org/licenses/lgpl-3.0.html.
+ *
+ *  @author Peter (Piotr) Fronc 
  */
 
-package com.qubitproducts.minimerge;
+package com.qubitproducts.compilejs;
 
-import com.qubitproducts.minimerge.MiniProcessor.LogLevel;
+import com.qubitproducts.compilejs.MainProcessor.LogLevel;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -252,7 +254,7 @@ public class Main {
     String excludeFilePathPatterns =  null;
     String cwd = null;
     boolean fsExistsOption = true;
-    MiniProcessor miniProcessor;
+    MainProcessor miniProcessor;
     
     try {
       for (int i = 0; i < args.length; i++) {
@@ -418,7 +420,7 @@ public class Main {
         
         out = new File(cwd, out).getCanonicalFile().getAbsolutePath();
           
-        miniProcessor = new MiniProcessor();
+        miniProcessor = new MainProcessor();
         miniProcessor.setAssumeFilesExist(!fsExistsOption);
         miniProcessor.setSourceBase(sourceBase.toArray(new String[0]));
         miniProcessor.setMergeOnly(filesIncluded.split(","));
@@ -437,7 +439,7 @@ public class Main {
         miniProcessor.setFromToIgnore(wrapsToExclude.split(","));
 
         if (!verbose) {
-          MiniProcessor.LOG_LEVEL = LogLevel.NONE;
+          MainProcessor.LOG_LEVEL = LogLevel.NONE;
         }
 
         if (vverbose) {
@@ -465,7 +467,7 @@ public class Main {
           if (noEol) {
             eol = "";
           }
-          String result = MiniProcessorHelper
+          String result = MainProcessorHelper
                   .getPrefixScriptPathSuffixString(
                         paths,
                         prefix,
