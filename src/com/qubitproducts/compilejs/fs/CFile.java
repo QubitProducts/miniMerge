@@ -341,4 +341,12 @@ public class CFile
           throws IOException {
     return new CFile(File.createTempFile(prefix, suffix));
   }
+
+  public FSFile getChild(FSFile location) {
+    return this.getChild(location.getPath());
+  }
+
+  public FSFile getChild(String path) {
+    return new CFile(this, path);
+  }
 }

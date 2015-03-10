@@ -97,6 +97,10 @@ public interface FSFile extends Cacheable {
   public File getFile();
   
   public String getAsString();
+
+  public FSFile getChild(FSFile location);
+
+  public FSFile getChild(String BUILD_DIR);
   
 }
 
