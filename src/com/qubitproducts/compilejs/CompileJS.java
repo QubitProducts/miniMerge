@@ -16,11 +16,12 @@
  */
 package com.qubitproducts.compilejs;
 
+import com.qubitproducts.compilejs.Log.LogLevel;
+import static com.qubitproducts.compilejs.Log.setLevel;
 import com.qubitproducts.compilejs.fs.LineReader;
 import com.qubitproducts.compilejs.processors.JSWrapperProcessor;
 import com.qubitproducts.compilejs.processors.JSTemplateProcessor;
 import com.qubitproducts.compilejs.processors.JSStringProcessor;
-import com.qubitproducts.compilejs.MainProcessor.LogLevel;
 import static com.qubitproducts.compilejs.MainProcessorHelper.chunkToExtension;
 import com.qubitproducts.compilejs.processors.InjectionProcessor;
 import java.io.BufferedWriter;
@@ -594,7 +595,7 @@ public class CompileJS {
                 miniProcessor.setFromToIgnore(wrapsToExclude.split(","));
 
                 if (!verbose) {
-                    MainProcessor.LOG_LEVEL = LogLevel.NONE;
+                    setLevel(LogLevel.NONE);
                 }
 
                 if (vverbose) {

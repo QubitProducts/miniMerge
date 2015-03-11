@@ -1,8 +1,8 @@
 package com.qubitproducts.compilejs.fs;
 
-import static com.qubitproducts.compilejs.CompileJS.LOGGER;
-import com.qubitproducts.compilejs.MainProcessor;
-import static com.qubitproducts.compilejs.MainProcessor.LOG_LEVEL;
+import static com.qubitproducts.compilejs.Log.LOG;
+import static com.qubitproducts.compilejs.Log.isLog;
+import static com.qubitproducts.compilejs.Log.log;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -26,26 +26,6 @@ public class CFile
   
   static public final char separatorChar = File.separatorChar;
   static public final String separator = File.separator;
-  
-  public static boolean isLog() {
-    return LOG_LEVEL != MainProcessor.LogLevel.NONE;
-  }
-  
-  public static void log(String msg) {
-    switch (LOG_LEVEL) {
-      case ALL:
-        System.out.println(msg);
-        LOGGER.fine(msg);
-        break;
-      case NONE:
-        break;
-      case FINE:
-        LOGGER.fine(msg);
-        break;
-      default:
-        System.out.println(msg);
-    }
-  }
   
   File plainFile = null;
 
@@ -77,7 +57,7 @@ public class CFile
     }
     
     } catch (IOException ioe) {
-      if (isLog()) {
+      if (LOG) {
         log("Could not read file: " + plainFile.getName());
       }
     }

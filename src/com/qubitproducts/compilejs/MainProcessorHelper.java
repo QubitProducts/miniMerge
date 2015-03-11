@@ -20,9 +20,9 @@
 
 package com.qubitproducts.compilejs;
 
+import static com.qubitproducts.compilejs.Log.LOG;
+import static com.qubitproducts.compilejs.Log.log;
 import com.qubitproducts.compilejs.fs.LineReader;
-import static com.qubitproducts.compilejs.MainProcessor.isLog;
-import static com.qubitproducts.compilejs.MainProcessor.log;
 import com.qubitproducts.compilejs.fs.CFile;
 import com.qubitproducts.compilejs.fs.FSFile;
 import java.io.BufferedReader;
@@ -34,8 +34,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 /**
@@ -376,7 +374,7 @@ public class MainProcessorHelper {
         out.write(character);
       }
     } catch (FileNotFoundException ex) {
-      if (isLog()) {
+      if (LOG) {
         log("File not found: " + ex.getMessage());
       }
     } finally {
@@ -403,8 +401,8 @@ public class MainProcessorHelper {
     FSFile _file = new CFile(file.getAbsolutePath() + TIL);
     
     if (file.exists()) {
-      if (isLog())log("    Stripping from " + wrap);
-      //if (isLog())log(">>> FSFile DOES exist: " + file.getAbsolutePath());
+      if (LOG)log("    Stripping from " + wrap);
+      //if (LOG)log(">>> FSFile DOES exist: " + file.getAbsolutePath());
       try {
         in = file.getBufferedReader();
         out = _file.getBufferedWriter();
@@ -413,21 +411,21 @@ public class MainProcessorHelper {
         out.close();
         in.close();
         
-        if (isLog())log(">>> Merged to: " + file.getAbsolutePath());
+        if (LOG)log(">>> Merged to: " + file.getAbsolutePath());
         
         if (!_file.renameTo(file)) {
           //lets try harder...
-          if (isLog())log("Renaming failed (it may happen on some systems),"
+          if (LOG)log("Renaming failed (it may happen on some systems),"
                   + " directly copying over...");
           try {
-            if (isLog())log("Copying " + _file.getAbsolutePath() + " to "
+            if (LOG)log("Copying " + _file.getAbsolutePath() + " to "
                     + file.getAbsolutePath());
             copyTo(_file, file);
           } catch (IOException e) {
             String msg = " Could not copy over the file nor delete tmp!"
                 + "\ntmp path:"+ _file.getAbsolutePath() + "\nreal: "
                 + file.getAbsolutePath();
-            if (isLog())log(e.getMessage());
+            if (LOG)log(e.getMessage());
             throw (new Exception(msg));
           }
         }
@@ -439,13 +437,13 @@ public class MainProcessorHelper {
           in.close();
         }
         
-        if (isLog())log("Cleaning. Deleting tmp file... " + _file.getAbsolutePath());
+        if (LOG)log("Cleaning. Deleting tmp file... " + _file.getAbsolutePath());
         
         _file.delete();
         _file = null;
       }
     } else {
-          if (isLog())log(">>> FSFile DOES NOT exist! Some of js files may"
+          if (LOG)log(">>> FSFile DOES NOT exist! Some of js files may"
              + " point to dependencies that do not match -s and"
              + " --js-deps-prefix  directory! Use -vv and see whats missing."
              + "\n    FSFile failed to open: "

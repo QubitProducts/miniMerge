@@ -19,8 +19,9 @@
 
 package com.qubitproducts.compilejs;
 
+import com.qubitproducts.compilejs.Log.LogLevel;
+import static com.qubitproducts.compilejs.Log.setLevel;
 import com.qubitproducts.compilejs.fs.LineReader;
-import com.qubitproducts.compilejs.MainProcessor.LogLevel;
 import com.qubitproducts.compilejs.fs.CFile;
 import com.qubitproducts.compilejs.fs.FSFile;
 import java.io.BufferedWriter;
@@ -440,7 +441,7 @@ public class Main {
         miniProcessor.setFromToIgnore(wrapsToExclude.split(","));
 
         if (!verbose) {
-          MainProcessor.LOG_LEVEL = LogLevel.NONE;
+          setLevel(LogLevel.NONE);
         }
 
         if (vverbose) {
