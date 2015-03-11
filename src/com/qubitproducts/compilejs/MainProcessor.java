@@ -19,12 +19,13 @@
 
 package com.qubitproducts.compilejs;
 
+import com.qubitproducts.compilejs.fs.LineReader;
 import static com.qubitproducts.compilejs.MainProcessorHelper.chunkToExtension;
+import com.qubitproducts.compilejs.fs.CFile;
+import com.qubitproducts.compilejs.fs.FSFile;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -396,8 +397,8 @@ public class MainProcessor {
   public void setSourceBase(String[] sourceBase) {
     List<String> srcs = new ArrayList<String>();
     for (int i = 0; i < sourceBase.length; i++) {
-      String srcBase = new File(getCwd(), sourceBase[i]).getPath();
-      srcBase = srcBase + File.separator;
+      String srcBase = new CFile(getCwd(), sourceBase[i]).getPath();
+      srcBase = srcBase + CFile.separator;
       srcs.add(srcBase);
       if (isLog())logVeryVerbosive("Source No. " + i + " base set to: " + srcBase);
     }
@@ -407,9 +408,9 @@ public class MainProcessor {
   private List<String> getMatchingFiles(String baseSrc, String base, String pattern) {
       List<String> list = new ArrayList<String>();
       
-      File location = new File(getCwd(), baseSrc);
-      location = new File(location, base);
-      File[] files = location.listFiles();
+      FSFile location = new CFile(getCwd(), baseSrc);
+      location = new CFile(location, base);
+      FSFile[] files = location.listFiles();
       
       pattern = pattern.trim();
       
@@ -419,10 +420,10 @@ public class MainProcessor {
       
       String[] chunks = pattern.split("\\*");
 
-      for (File file : files) {
+      for (FSFile file : files) {
           if (!file.isDirectory() && file.getName().startsWith(chunks[0]) &&
               (chunks.length < 2 || file.getName().endsWith(chunks[1]))) {
-              list.add(new File(base, file.getName()).getPath());
+              list.add(new CFile(base, file.getName()).getPath());
           }
       }
       
@@ -479,8 +480,8 @@ public class MainProcessor {
         String[] dirs = this.getSourceBase();
 
         for (String dir : dirs) {
-          File fileBase = new File(dir, starting);
-          File tmp = new File(getCwd(), fileBase.getPath());
+          FSFile fileBase = new CFile(dir, starting);
+          FSFile tmp = new CFile(getCwd(), fileBase.getPath());
 
           if (this.checkIfExists(tmp)) {
             List<String> list = getMatchingFiles(
@@ -514,7 +515,7 @@ public class MainProcessor {
           String path = dir + dependencyPathString;
           //@todo - adding virtual paths??? so fir single repo virtual path is listed?
           if (helpingMap.containsKey(path)
-              || this.checkIfExists(new File(getCwd(), path))) {
+              || this.checkIfExists(new CFile(getCwd(), path))) {
             helpingMap.put(path, null);
             results.add(new String[]{path, dir});
           }
@@ -532,7 +533,7 @@ public class MainProcessor {
   private boolean assumeFilesExist = false;
   private final HashMap<String, Boolean> existingFiles = 
           new HashMap<String, Boolean>();
-  private boolean checkIfExists (File file) {
+  private boolean checkIfExists (FSFile file) {
     Boolean exists = existingFiles.get(file.getAbsolutePath());
     if (exists == null) {
       exists = file.exists();
@@ -687,21 +688,21 @@ public class MainProcessor {
    * Function listing recursively entire files tree. 
    * Similar to plain find in UNIX.
    *
-   * @param file  java.io.File File specifying tree root node (mostly a
+   * @param file  java.io.FSFile FSFile specifying tree root node (mostly a
    * directory).
    * @return List list of files.
    */
-  public static List<File> listFilesTree(File file) {
-    ArrayList<File> results = new ArrayList();
-    File[] files = file.listFiles();
+  public static List<FSFile> listFilesTree(FSFile file) {
+    ArrayList<FSFile> results = new ArrayList();
+    FSFile[] files = file.listFiles();
     if (files == null) {
       results.add(file);
     } else {
-      for (File file1 : files) {
+      for (FSFile file1 : files) {
         if (!file1.isDirectory()) {
           results.add(file1);
         } else {
-          List<File> subdir = listFilesTree(file1);
+          List<FSFile> subdir = listFilesTree(file1);
           results.addAll(subdir);
         }
       }
@@ -732,7 +733,7 @@ public class MainProcessor {
    * @param test
    * @return
    */
-  protected boolean testIfFileIncluded(File test) {
+  protected boolean testIfFileIncluded(FSFile test) {
     String[] strings = this.getMergeOnly();
     String name = test.getName();
     for (String string : strings) {
@@ -806,8 +807,7 @@ public class MainProcessor {
           Map<String, String> paths,
           boolean checkLinesExcluded,
           String outputFile) throws IOException {
-        BufferedWriter writer = new BufferedWriter(
-            new FileWriter((new File(outputFile))));
+        BufferedWriter writer = (new CFile(outputFile)).getBufferedWriter();
         
         try {
             mergeFiles(paths, checkLinesExcluded, writer, outputFile);
@@ -818,7 +818,7 @@ public class MainProcessor {
         try {
             if (isLog())log(">>> Stripping file: " + outputFile);
             MainProcessorHelper
-                .stripFileFromWraps(new File(outputFile),
+                .stripFileFromWraps(new CFile(outputFile),
                     this.getFromToIgnore(),
                     isKeepLines() ? EMPTY : null);
             
@@ -862,7 +862,7 @@ public class MainProcessor {
    * @return
    */
   public String getTopAbsoluteParent(String path) {
-    File file = new File(new File(
+    FSFile file = new CFile(new CFile(
             this.getCwd(), path + "anystring"
     ).getAbsolutePath());
     String result = file.getParent();
@@ -899,7 +899,7 @@ public class MainProcessor {
       String item = it.next();
       String dirBase = paths.get(item);
 
-      dirBase = new File(this.getCwd(), dirBase).getAbsolutePath();
+      dirBase = new CFile(this.getCwd(), dirBase).getAbsolutePath();
       if (isLog())logVeryVerbosive(">>> Dir Base + Path : " + dirBase + " --> " + item);
       LineReader in = null;
       String topDir = this.getTopAbsoluteParent(dirBase);
@@ -911,17 +911,17 @@ public class MainProcessor {
         pathPrefix = dirBase;
       }
       //no Cwd here!
-      File file = new File(pathPrefix + File.separator + item);
+      FSFile file = new CFile(pathPrefix + FSFile.separator + item);
       
       if (file.getCanonicalFile().getAbsolutePath()
               .equals(currentOutputToIgnore)) {
-        if (isLog())log("!!! File is the current output (EXCLUDING): "
+        if (isLog())log("!!! FSFile is the current output (EXCLUDING): "
                 + file.getAbsolutePath());
       } else {
         //if (this.checkIfExists(file)) {
-          //if (isLog())log(">>> File DOES exist: " + file.getAbsolutePath());
+          //if (isLog())log(">>> FSFile DOES exist: " + file.getAbsolutePath());
           try {
-            in = new LineReader(file);
+            in = file.getLineReader();
             String line;
             if (isLog())log(">>> Merging: " + file.getAbsolutePath());
             while ((line = in.readLine()) != null) {
@@ -934,20 +934,20 @@ public class MainProcessor {
               }
             }
           } catch (FileNotFoundException fnf) {
-            if (isLog())log(">>> File DOES NOT exist! Some of File files may"
+            if (isLog())log(">>> FSFile DOES NOT exist! Some of FSFile files may"
                   + " point to dependencies that do not match -s and"
                   + " --file-deps-prefix  directory! Use -vv and see "
-                  + "whats missing.\n    File failed to open: "
+                  + "whats missing.\n    FSFile failed to open: "
                   + file.getAbsolutePath());
           } finally {
             writer.flush();
             if (in != null) in.close();
           }
 //        } else {
-//          if (isLog())log(">>> File DOES NOT exist! Some of File files may"
+//          if (isLog())log(">>> FSFile DOES NOT exist! Some of FSFile files may"
 //                  + " point to dependencies that do not match -s and"
 //                  + " --file-deps-prefix  directory! Use -vv and see "
-//                  + "whats missing.\n    File failed to open: "
+//                  + "whats missing.\n    FSFile failed to open: "
 //                  + file.getAbsolutePath());
 //        }
       }
@@ -987,7 +987,7 @@ public class MainProcessor {
             String currentPath = allPaths.next();
             String dirBase = paths.get(currentPath);
 
-            dirBase = new File(this.getCwd(), dirBase).getAbsolutePath();
+            dirBase = new CFile(this.getCwd(), dirBase).getAbsolutePath();
             if (isLog())logVeryVerbosive(">>> Dir Base + Path : " + dirBase + " --> " + currentPath);
             LineReader in = null;
             String topDir = this.getTopAbsoluteParent(dirBase);
@@ -999,17 +999,17 @@ public class MainProcessor {
                 pathPrefix = dirBase;
             }
             //no Cwd here!
-            File file = new File(pathPrefix, currentPath);
+            FSFile file = new CFile(pathPrefix, currentPath);
 
             if (file.getCanonicalFile().getAbsolutePath()
                 .equals(outputName)) {
-                if (isLog())log("!!! File is the current output (EXCLUDING): "
+                if (isLog())log("!!! FSFile is the current output (EXCLUDING): "
                     + file.getAbsolutePath());
             } else {
         //if (this.checkIfExists(file)) {
-                //if (isLog())log(">>> File DOES exist: " + file.getAbsolutePath());
+                //if (isLog())log(">>> FSFile DOES exist: " + file.getAbsolutePath());
                 try {
-                    in = (new LineReader(file));
+                    in = file.getLineReader();
                     
                     String tmp;
                     List<String> lines = new ArrayList<String>();
@@ -1052,10 +1052,10 @@ public class MainProcessor {
                     
                     if (isLog())log(">>> Merging: " + file.getAbsolutePath());
                 } catch (FileNotFoundException fnf) {
-                    if (isLog())log(">>> File DOES NOT exist! Some of File files may"
+                    if (isLog())log(">>> FSFile DOES NOT exist! Some of FSFile files may"
                         + " point to dependencies that do not match -s and"
                         + " --file-deps-prefix  directory! Use -vv and see "
-                        + "whats missing.\n    File failed to open: "
+                        + "whats missing.\n    FSFile failed to open: "
                         + file.getAbsolutePath());
                 } finally {
                     if (in != null) {
@@ -1063,10 +1063,10 @@ public class MainProcessor {
                     }
                 }
 //        } else {
-//          if (isLog())log(">>> File DOES NOT exist! Some of File files may"
+//          if (isLog())log(">>> FSFile DOES NOT exist! Some of FSFile files may"
 //                  + " point to dependencies that do not match -s and"
 //                  + " --file-deps-prefix  directory! Use -vv and see "
-//                  + "whats missing.\n    File failed to open: "
+//                  + "whats missing.\n    FSFile failed to open: "
 //                  + file.getAbsolutePath());
 //        }
             }
@@ -1086,7 +1086,7 @@ public class MainProcessor {
 //            if (chunkRawName.equals(EMPTY)) {
 //                currentOutputName = outputName;
 //            }
-//            File f = new File(currentOutputName);
+//            FSFile f = new CFile(currentOutputName);
 //            if (f.exists()){
 //                f.delete();
 //            }
@@ -1102,8 +1102,8 @@ public class MainProcessor {
             if (chunk != null && chunk.length() > 0) {
                 BufferedWriter writer = null;
                 try {
-                    writer = new BufferedWriter(
-                        new FileWriter(currentOutputName, !clear));
+                    writer = new CFile(currentOutputName)
+                        .getBufferedWriter(!clear);
                     writer.append(chunk);
                     writer.flush();
                 } finally {
@@ -1125,7 +1125,7 @@ public class MainProcessor {
    * @throws IOException
    */
   public LinkedHashMap<String, String>
-          getFileDependenciesFromFile(
+          getFileDependenciesFromCFile(
               List<String> paths,
               boolean relative,
               String output)
@@ -1168,12 +1168,12 @@ public class MainProcessor {
     LinkedHashMap<String, String> paths = new LinkedHashMap<String, String>();
     LinkedHashMap<String, String> excludes = new LinkedHashMap<String, String>();
     
-    Map<String, List<File>> files = new HashMap<String, List<File>>();
+    Map<String, List<FSFile>> files = new HashMap<String, List<FSFile>>();
     List<String> sourceDirs = new ArrayList<String>(); // potential source bases
     
     for (String path : pathsToCheck) {
-      File startingFile = new File(getCwd(), path);
-      List<File> tmp = MainProcessor.listFilesTree(startingFile);
+      FSFile startingFile = new CFile(getCwd(), path);
+      List<FSFile> tmp = MainProcessor.listFilesTree(startingFile);
       files.put(path, tmp);
 
       if (startingFile.isFile()) {
@@ -1187,9 +1187,9 @@ public class MainProcessor {
 
     //check which match extensions set
     for (String keySet : files.keySet()) {
-      List<File> tmp = files.get(keySet);
+      List<FSFile> tmp = files.get(keySet);
       for (int i = 0; i < tmp.size(); i++) {
-        File f = tmp.get(i);
+        FSFile f = tmp.get(i);
         if (!this.testIfFileIncluded(f)
             || f.getCanonicalFile().getAbsolutePath().equals(currentOutput)) {
           // do not include current startingFile
@@ -1223,8 +1223,8 @@ public class MainProcessor {
     //this is a hash ensuring that no file duplicates will occure in dependencies
     //@TODO check where allPaths can be added
     for (String keySet : files.keySet()) {
-      List<File> tmp = files.get(keySet);
-      for (File file : tmp) {
+      List<FSFile> tmp = files.get(keySet);
+      for (FSFile file : tmp) {
         //if (isLog())log( files.get(i).getAbsolutePath());
         String dependencyPath = file.getAbsolutePath();
         //already in
@@ -1262,15 +1262,15 @@ public class MainProcessor {
    * @throws IOException
    */
   private boolean processFileDependencies(
-          File file,
+          FSFile file,
           Map<String, String> paths,
           Map<String, String> excludes,
           boolean relative,
           boolean ignoreDependencies,
           boolean checkIfFilesExists,
           String dirBase,
-          File from) throws IOException {
-//    file = file.getCanonicalFile();
+          FSFile from) throws IOException {
+//    file = file.getCanonicalCFile();
     
     if (processed.containsKey(file.getAbsolutePath())) {
       return false;
@@ -1295,12 +1295,12 @@ public class MainProcessor {
 
     if (!ignoreDependencies) try {
 
-    in = new LineReader(file);
+    in = file.getLineReader();
     line = in.readLine();
     
     // make sure its not excluded first line
     if (this.excludingFile(line)) {
-      if (isLog())log(">>> File \"" + file.getAbsolutePath()
+      if (isLog())log(">>> FSFile \"" + file.getAbsolutePath()
               + "\" will be excluded by one of keywords exclusion, the line:"
               + line);
       excludeThisFile = true;
@@ -1315,7 +1315,7 @@ public class MainProcessor {
         if (isLog())logVeryVerbosive("Initialising searching for dependencies for file:\n"
               + file.getPath());
       }
-      //log(this.getCurrentIndent() + "File: " + file.getPath());
+      //log(this.getCurrentIndent() + "FSFile: " + file.getPath());
       do {
         // check if line contains preprocessing words
         mayBePreProcessorLine = lineMayContainPreProcessor(line);
@@ -1342,7 +1342,7 @@ public class MainProcessor {
                     + ((String) dependencyPathObject[0]) + " (" +
                         "directive line: " + line + ")");
 
-                File tmp = new File(getCwd(), dependenciesPaths[0]);
+                FSFile tmp = new CFile(getCwd(), dependenciesPaths[0]);
 
                 //do not analyse files already in paths
                 if (!this.dependenciesChecked
@@ -1381,7 +1381,7 @@ public class MainProcessor {
 
         //check every line
         if (this.excludingFile(line)) {
-            if (isLog())log(">>> File \"" + file.getAbsolutePath()
+            if (isLog())log(">>> FSFile \"" + file.getAbsolutePath()
                 + "\" will be excluded by one of keywords exclusion,"
                 + " the line:"
                 + line);
@@ -1400,7 +1400,7 @@ public class MainProcessor {
       }
     } catch (FileNotFoundException ex) {
       if (isLog())log(this.getCurrentIndent()
-              + ">>> !!! File not found, either file does "
+              + ">>> !!! FSFile not found, either file does "
               + "not exist or source base is incorrect! PATH: "
               + file.getPath() + "\n Exception: \n");
       if (isLog())log(ex.getMessage());
@@ -1440,7 +1440,7 @@ public class MainProcessor {
   private final HashMap<String, Boolean> alreadyProcessed = new HashMap<String, Boolean>();
   
   
-  Map<String, File> cannonicalFilesCache = new HashMap<String, File>();
+  Map<String, FSFile> cannonicalFilesCache = new HashMap<String, FSFile>();
 
   /**
    * Private function handling addng/queueing elements to the paths linked map.
@@ -1460,14 +1460,14 @@ public class MainProcessor {
   private void addOrExcludeFileFromPathsListSingle(
           boolean excludeThisFile,
           Map<String, String> excludes,
-          File file,
+          FSFile file,
           Map<String, String> paths,
           boolean relative,
           boolean checkIfFilesExists,
           String dirBase,
-          File from) throws IOException {
+          FSFile from) throws IOException {
     
-    //File originalFile = file;
+    //FSFile originalFile = file;
     file = file.getCanonicalFile();
     String fileAbsPath = file.getAbsolutePath();
     
@@ -1477,20 +1477,20 @@ public class MainProcessor {
     alreadyProcessed.put(fileAbsPath, true);
     
     String tmp;
-    File srcBase; //or "." ?
+    FSFile srcBase; //or "." ?
     //cache
-    File found = cannonicalFilesCache.get(dirBase);
+    FSFile found = cannonicalFilesCache.get(dirBase);
     if (found != null) {
       srcBase = found;
     } else {
-      srcBase = new File(getCwd(), dirBase); //or "." ?
+      srcBase = new CFile(getCwd(), dirBase); //or "." ?
       //make sure we have straight paths (not a/b/../b/c for example)
       //all relative paths are versus src base
       srcBase = srcBase.getCanonicalFile();
       cannonicalFilesCache.put(dirBase, srcBase);
     }
     
-    String prefix = srcBase.getAbsolutePath() + File.separator;
+    String prefix = srcBase.getAbsolutePath() + CFile.separator;
     
     if (excludeThisFile) {
       //dont add but queue allPaths in excludes for future ignores
@@ -1510,7 +1510,7 @@ public class MainProcessor {
       if (checkIfFilesExists) {
         if (!this.checkIfExists(file)) {
           addToPaths = false;
-          if(isLog())log("By check if exist: File does not exist. "+fileAbsPath);
+          if(isLog())log("By check if exist: FSFile does not exist. "+fileAbsPath);
         }
       }
       
@@ -1577,7 +1577,7 @@ public class MainProcessor {
    */
   private Object[] detectDirectoryPrefix (
       String fileAbsPath,
-      File srcBase,
+      FSFile srcBase,
       String dirBase,
       String prefix) throws IOException {
     //optimisticly ends here
@@ -1589,8 +1589,8 @@ public class MainProcessor {
         if (found != null) {
           nprefix = found;
         } else {
-          srcBase = new File(getCwd(), item).getCanonicalFile();
-          nprefix = srcBase.getAbsolutePath() + File.separator;
+          srcBase = new CFile(getCwd(), item).getCanonicalFile();
+          nprefix = srcBase.getAbsolutePath() + CFile.separator;
           prefixCacheForDetector.put(item, nprefix);
         }
         

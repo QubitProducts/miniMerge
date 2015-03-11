@@ -16,6 +16,7 @@
  */
 package com.qubitproducts.compilejs;
 
+import com.qubitproducts.compilejs.fs.LineReader;
 import com.qubitproducts.compilejs.processors.JSWrapperProcessor;
 import com.qubitproducts.compilejs.processors.JSTemplateProcessor;
 import com.qubitproducts.compilejs.processors.JSStringProcessor;

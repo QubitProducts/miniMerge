@@ -18,7 +18,7 @@
  */
 
 
-package com.qubitproducts.compilejs;
+package com.qubitproducts.compilejs.fs;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -41,11 +41,11 @@ public class LineReader {
     private LineReader lineReader = null;
     private List<String> lines = new ArrayList<String>();
 
-    private static HashMap<String, List<String>> cache = 
+    public final static HashMap<String, List<String>> cache = 
         new HashMap<String, List<String>>();
 
     public static void clearCache() {
-        cache = new HashMap<String, List<String>>();
+        cache.clear();
     }
 
     public LineReader(List<String> strings) {

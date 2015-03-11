@@ -20,7 +20,7 @@
 
 package com.qubitproducts.compilejs.processors;
 
-import com.qubitproducts.compilejs.LineReader;
+import com.qubitproducts.compilejs.fs.LineReader;
 import com.qubitproducts.compilejs.MainProcessor;
 import com.qubitproducts.compilejs.Processor;
 import static com.qubitproducts.compilejs.MainProcessorHelper.chunkToExtension;

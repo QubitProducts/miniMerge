@@ -19,11 +19,12 @@
 
 package com.qubitproducts.compilejs;
 
+import com.qubitproducts.compilejs.fs.LineReader;
 import com.qubitproducts.compilejs.MainProcessor.LogLevel;
+import com.qubitproducts.compilejs.fs.CFile;
+import com.qubitproducts.compilejs.fs.FSFile;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -330,9 +331,9 @@ public class Main {
       src = ".";
     }
     
-    File srcFile = new File(cwd, src);
-    if (src.startsWith(File.separator)) {
-      srcFile = new File(src);
+    FSFile srcFile = new CFile(cwd, src);
+    if (src.startsWith(CFile.separator)) {
+      srcFile = new CFile(src);
     }
     
     //src = (srcFile).getPath();
@@ -368,7 +369,7 @@ public class Main {
       ps.println(
             "  -i  Included file types: " + filesIncluded
         + "\n  -o  Output: " + 
-              (out == null ? "null" : (new File(out)).getAbsolutePath())
+              (out == null ? "null" : (new CFile(out)).getAbsolutePath())
         + "\n  -s  Src dir: " + src
         + "\n  -ir Ignoring RequireJS: " + (ignoreRJS ? "yes" : "no")
         + "\n  -nd No dependencies: " + (!dependencies)
@@ -418,7 +419,7 @@ public class Main {
     if (out != null) {
       try {
         
-        out = new File(cwd, out).getCanonicalFile().getAbsolutePath();
+        out = new CFile(cwd, out).getCanonicalFile().getAbsolutePath();
           
         miniProcessor = new MainProcessor();
         miniProcessor.setAssumeFilesExist(!fsExistsOption);
@@ -478,7 +479,7 @@ public class Main {
           BufferedWriter writer = null;
 
           try {
-            writer = new BufferedWriter(new FileWriter(new File(out)));
+            writer = new CFile(out).getBufferedWriter();
 
             log(result);
 

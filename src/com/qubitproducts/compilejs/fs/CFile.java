@@ -1,16 +1,21 @@
 package com.qubitproducts.compilejs.fs;
 
 import static com.qubitproducts.compilejs.CompileJS.LOGGER;
-import com.qubitproducts.compilejs.LineReader;
 import com.qubitproducts.compilejs.MainProcessor;
 import static com.qubitproducts.compilejs.MainProcessor.LOG_LEVEL;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  *
@@ -18,6 +23,9 @@ import java.util.HashMap;
  */
 public class CFile
         implements FSFile {
+  
+  static public final char separatorChar = File.separatorChar;
+  static public final String separator = File.separator;
   
   public static boolean isLog() {
     return LOG_LEVEL != MainProcessor.LogLevel.NONE;
@@ -56,7 +64,6 @@ public class CFile
   @Override
   public String getAsString() {
     try {
-      
     String cached = cache.get(plainFile.getCanonicalPath());
     
     if (cached == null) {
@@ -349,4 +356,41 @@ public class CFile
   public FSFile getChild(String path) {
     return new CFile(this, path);
   }
+
+  public LineReader getLineReader() throws FileNotFoundException {
+    LineReader lr = new LineReader(plainFile);
+    return lr;
+  }
+
+  public BufferedWriter getBufferedWriter() throws IOException {
+    BufferedWriter writer = new BufferedWriter(
+        new FileWriter(plainFile));
+    return writer;
+  }
+
+  public BufferedWriter getBufferedWriter(boolean b) throws IOException {
+    BufferedWriter writer = new BufferedWriter(
+        new FileWriter(plainFile, b));
+    return writer;
+  }
+
+  public BufferedReader getBufferedReader()
+      throws FileNotFoundException {
+    BufferedReader writer = new BufferedReader(
+        new FileReader(plainFile));
+    return writer;
+  }
+
+  public List<String> getLines() throws IOException {
+    throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+  }
+
+  public List<String> saveLines() throws IOException {
+    throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+  }
+
+  public List<String> saveLines(List<String> lines) throws IOException {
+    throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+  }
+
 }

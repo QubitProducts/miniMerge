@@ -20,14 +20,14 @@
 
 package com.qubitproducts.compilejs;
 
+import com.qubitproducts.compilejs.fs.LineReader;
 import static com.qubitproducts.compilejs.MainProcessor.isLog;
 import static com.qubitproducts.compilejs.MainProcessor.log;
+import com.qubitproducts.compilejs.fs.CFile;
+import com.qubitproducts.compilejs.fs.FSFile;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -57,7 +57,7 @@ public class MainProcessorHelper {
    * @throws IOException
    * @throws Exception 
    */
-  public static void stripFileFromWraps(File file, String[] wraps, String replacement)
+  public static void stripFileFromWraps(FSFile file, String[] wraps, String replacement)
           throws FileNotFoundException, IOException, Exception {
     
     if (wraps == null || wraps.length == 0) return;
@@ -66,7 +66,7 @@ public class MainProcessorHelper {
     BufferedReader reader = null;
     
     try {
-      reader = new BufferedReader(new FileReader(file));
+      reader = file.getBufferedReader();
       String line = null;
       while ((line = reader.readLine()) != null) {
         lines.add(line);
@@ -80,7 +80,7 @@ public class MainProcessorHelper {
     
     BufferedWriter writer = null;
     try {
-      writer = new BufferedWriter(new FileWriter(file));
+      writer = file.getBufferedWriter();
       for (String line : lines) {
         writer.write(line + RET);
       }
@@ -365,18 +365,20 @@ public class MainProcessorHelper {
    * @param to
    * @throws IOException 
    */
-  public static void copyTo(File from, File to) throws IOException {
+  public static void copyTo(FSFile from, FSFile to) throws IOException {
     BufferedReader in = null;
     BufferedWriter out = null;
     try {
-      in = new BufferedReader(new FileReader(from));
-      out = new BufferedWriter(new FileWriter(to));
+      in = from.getBufferedReader();
+      out = to.getBufferedWriter();
       int character;
       while ( (character = in.read()) != -1) {
         out.write(character);
       }
     } catch (FileNotFoundException ex) {
-      Logger.getLogger(MainProcessorHelper.class.getName()).log(Level.SEVERE, null, ex);
+      if (isLog()) {
+        log("File not found: " + ex.getMessage());
+      }
     } finally {
       if(in != null) in.close();
       if(out != null) out.close();
@@ -394,19 +396,18 @@ public class MainProcessorHelper {
    * @throws IOException
    * @throws Exception 
    */
-  public static void stripFileFromWrap(File file, String wrap, String replacement)
+  public static void stripFileFromWrap(FSFile file, String wrap, String replacement)
           throws FileNotFoundException, IOException, Exception {
     BufferedReader in = null;
     BufferedWriter out = null;
-    File _file = new File(file.getAbsolutePath() + TIL);
+    FSFile _file = new CFile(file.getAbsolutePath() + TIL);
     
     if (file.exists()) {
       if (isLog())log("    Stripping from " + wrap);
-      //if (isLog())log(">>> File DOES exist: " + file.getAbsolutePath());
+      //if (isLog())log(">>> FSFile DOES exist: " + file.getAbsolutePath());
       try {
-        in = new BufferedReader(new FileReader(file));
-        FileWriter fw = new FileWriter(_file);
-        out = new BufferedWriter(fw);
+        in = file.getBufferedReader();
+        out = _file.getBufferedWriter();
         stripFromWrap(in, out, wrap, replacement);
         
         out.close();
@@ -444,10 +445,10 @@ public class MainProcessorHelper {
         _file = null;
       }
     } else {
-          if (isLog())log(">>> File DOES NOT exist! Some of js files may"
+          if (isLog())log(">>> FSFile DOES NOT exist! Some of js files may"
              + " point to dependencies that do not match -s and"
              + " --js-deps-prefix  directory! Use -vv and see whats missing."
-             + "\n    File failed to open: "
+             + "\n    FSFile failed to open: "
              + file.getAbsolutePath());
     }
   }
@@ -558,8 +559,8 @@ public class MainProcessorHelper {
           if (appendSrcBase) {
               String srcDir = paths.get(path);
               builder.append(srcDir);
-              if (!srcDir.endsWith(File.separator)) {
-                  builder.append(File.separator);
+              if (!srcDir.endsWith(CFile.separator)) {
+                  builder.append(CFile.separator);
               }
           }
 
@@ -567,7 +568,7 @@ public class MainProcessorHelper {
           builder.append(suf);
       }
     
-    if (File.separatorChar == '\\' && unixStyle) {
+    if (CFile.separatorChar == '\\' && unixStyle) {
       return builder.toString().replace(SLSH, FSLSH);
 //      return getPrefixScriptPathSuffixStringPattern
 //                    .matcher(builder.toString())

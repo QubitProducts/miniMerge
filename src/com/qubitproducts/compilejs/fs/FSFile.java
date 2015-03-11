@@ -1,16 +1,24 @@
 package com.qubitproducts.compilejs.fs;
 
 import com.qubitproducts.compilejs.Cacheable;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.util.List;
 
 /**
  *
  * @author Peter Fronc <peter.fronc@qubitdigital.com>
  */
 public interface FSFile extends Cacheable {
+
+  public static String separator = File.separator;
+
+  public static char separatorChar = File.separatorChar;
 
   public boolean canExecute();
 
@@ -95,16 +103,26 @@ public interface FSFile extends Cacheable {
   public boolean setWritable(boolean writable);
 
   public File getFile();
-  
+
   public String getAsString();
 
   public FSFile getChild(FSFile location);
 
   public FSFile getChild(String BUILD_DIR);
+
+  public List<String> getLines() throws IOException;
+  public List<String> saveLines() throws IOException;
+  public List<String> saveLines(List<String> lines) throws IOException;
+  
+  public LineReader getLineReader() throws IOException;
+
+  public BufferedWriter getBufferedWriter() throws IOException;
+
+  public BufferedWriter getBufferedWriter(boolean b) throws IOException;
+
+  public BufferedReader getBufferedReader() throws FileNotFoundException;
   
 }
-
-
 
 //
 //
