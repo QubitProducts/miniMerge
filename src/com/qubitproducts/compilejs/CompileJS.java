@@ -257,7 +257,8 @@ public class CompileJS {
     public static void main(String[] args) throws IOException, Exception {
         //add prop file reading
         CompileJS c = new CompileJS();
-        Map<String, List<String>> cache = new HashMap<String, List<String>>();   c.setLineReaderCache(cache);
+        Map<String, List<String>> cache = new HashMap<String, List<String>>();
+        c.setLineReaderCache(cache);
         try {
             c.compile(args);
         } catch (Exception e) {
@@ -269,7 +270,7 @@ public class CompileJS {
         }
     }
 
-    public String[] readConfig(String fname) {
+    public List<String> readConfig(String fname) {
         CFile file = new CFile(fname);
         if (!file.exists()) {
             return null;
@@ -279,6 +280,15 @@ public class CompileJS {
         Properties p = new Properties();
         try {
             p.load(new StringReader(all));
+            List<String> list = new ArrayList<String>();
+            for (String arg : p.stringPropertyNames()) {
+                list.add(arg);
+                String value = p.getProperty(arg);
+                if (value != null && !value.equals("")) {
+                    list.add(value);
+                }
+            }
+            return list;
         } catch (IOException ex) {
             if (Log.LOG) {
                 error(ex);
@@ -318,14 +328,14 @@ public class CompileJS {
             configPath = new File(cwd, configPath).getAbsolutePath();
         }
         
-        String[] fromConfig = readConfig(configPath);
-        
-        List<String> joinedArgs = new ArrayList<String>();
+        List<String> fromConfig = readConfig(configPath);
         
         if (fromConfig != null) {
+            ArrayList<String> tmp = new ArrayList<String>();
             List<String> argsList = Arrays.asList(args);
-            argsList.addAll(Arrays.asList(fromConfig));
-            args = (String[]) argsList.toArray();
+            tmp.addAll(argsList);
+            tmp.addAll(fromConfig);
+            args = (String[]) tmp.toArray(new String[]{});
         }
         
         boolean exit = false;
@@ -1033,8 +1043,12 @@ public class CompileJS {
     }
     
     @Override
-    public void finalize() {
-        this.setLineReaderCache(null); //release but not clear
+    public void finalize() throws Throwable {
+        try{
+            super.finalize();
+        } finally {
+            this.setLineReaderCache(null); //release but not clear
+        }
     }
     
     /**
