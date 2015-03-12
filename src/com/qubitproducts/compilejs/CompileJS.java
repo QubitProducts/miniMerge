@@ -18,7 +18,6 @@ package com.qubitproducts.compilejs;
 
 import com.qubitproducts.compilejs.Log.LogLevel;
 import static com.qubitproducts.compilejs.Log.setLevel;
-import com.qubitproducts.compilejs.fs.LineReader;
 import com.qubitproducts.compilejs.processors.JSWrapperProcessor;
 import com.qubitproducts.compilejs.processors.JSTemplateProcessor;
 import com.qubitproducts.compilejs.processors.JSStringProcessor;

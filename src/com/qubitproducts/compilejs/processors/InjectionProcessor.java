@@ -23,7 +23,7 @@ package com.qubitproducts.compilejs.processors;
 import com.qubitproducts.compilejs.fs.LineReader;
 import com.qubitproducts.compilejs.MainProcessor;
 import com.qubitproducts.compilejs.Processor;
-import static com.qubitproducts.compilejs.MainProcessorHelper.chunkToExtension;
+import static com.qubitproducts.compilejs.Utils.translateClasspathToPath;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -83,7 +83,7 @@ public class InjectionProcessor implements Processor {
                             int j = 1;
                             
                             String path = 
-                                MainProcessor.translateClassPath(parts[j]) 
+                                translateClasspathToPath(parts[j]) 
                                   + ".js";
                             
                             while(path == null || path.trim().equals("")) {
