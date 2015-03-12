@@ -179,6 +179,7 @@ public class MainProcessor {
   /*
    * simple custom console logger
    */
+    private Map<String, List<String>> lineReaderCache;
   
   
   /**
@@ -260,6 +261,17 @@ public class MainProcessor {
    */
   public void setPreProcessorChar(char preProcessorChar) {
     this.preProcessorChar = preProcessorChar;
+  }
+
+  void setLineReaderCache(Map<String, List<String>> cache) {
+    this.lineReaderCache = cache;
+  }
+
+    /**
+     * @return the lineReaderCache
+     */
+  public Map<String, List<String>> getLineReaderCache() {
+    return this.lineReaderCache;
   }
 
   public enum Types {
@@ -892,7 +904,7 @@ public class MainProcessor {
         //if (this.checkIfExists(file)) {
           //if (LOG)log(">>> FSFile DOES exist: " + file.getAbsolutePath());
           try {
-            in = file.getLineReader();
+            in = file.getLineReader(this.getLineReaderCache());
             String line;
             if (LOG)log(">>> Merging: " + file.getAbsolutePath());
             while ((line = in.readLine()) != null) {
@@ -980,7 +992,7 @@ public class MainProcessor {
         //if (this.checkIfExists(file)) {
                 //if (LOG)log(">>> FSFile DOES exist: " + file.getAbsolutePath());
                 try {
-                    in = file.getLineReader();
+                    in = file.getLineReader(this.getLineReaderCache());
                     
                     String tmp;
                     List<String> lines = new ArrayList<String>();
@@ -1131,7 +1143,7 @@ public class MainProcessor {
           boolean ignoreDependencies,
           String currentOutput)
           throws FileNotFoundException, IOException {
-    //not cache
+    //not lineReaderCache
     processed.clear();
     alreadyProcessed.clear();
     
@@ -1266,7 +1278,7 @@ public class MainProcessor {
 
     if (!ignoreDependencies) try {
 
-    in = file.getLineReader();
+    in = file.getLineReader(this.getLineReaderCache());
     line = in.readLine();
     
     // make sure its not excluded first line

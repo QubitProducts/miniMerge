@@ -115,7 +115,8 @@ public class InjectionProcessor implements Processor {
                                     builder.append(pre);
                                 }
                                 
-                                LineReader lr = new LineReader(f);
+                                LineReader lr = 
+                                    new LineReader(f, mprocessor.getLineReaderCache());
                                 String l = null;
                                 while((l = lr.readLine()) != null) {
                                     builder.append(l);

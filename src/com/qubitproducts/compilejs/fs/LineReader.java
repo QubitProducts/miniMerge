@@ -16,8 +16,6 @@
  *
  *  @author Peter (Piotr) Fronc 
  */
-
-
 package com.qubitproducts.compilejs.fs;
 
 import java.io.BufferedReader;
@@ -26,7 +24,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 
 /**
@@ -38,43 +36,63 @@ public class LineReader {
     BufferedReader fileReader = null;
     private File file = null;
     private int lnum = 0;
-    private LineReader lineReader = null;
     private List<String> lines = new ArrayList<String>();
 
-    public final static HashMap<String, List<String>> cache = 
-        new HashMap<String, List<String>>();
+    public  Map<String, List<String>> cache = null;
 
-    public static void clearCache() {
-        cache.clear();
+//    @Override
+//    public void finalize() throws Throwable {
+//        super.finalize();
+//    }
+    private void setupForArray(List<String> lines) {
+        this.lines = lines;
+        cached = true;
     }
+
+    private boolean cached = false;
 
     public LineReader(List<String> strings) {
-        lines = strings;
+        setupForArray(lines);
     }
 
-    public LineReader(File file) throws FileNotFoundException {
-        List<String> cachedLines = cache.get(file.getAbsolutePath());
+    public LineReader(File file, Map<String, List<String>> pcache)
+        throws FileNotFoundException {
+        List<String> cachedLines = null;
+        
+        if (pcache != null) {
+            cachedLines = pcache.get(file.getAbsolutePath());
+        }
+        
         if (cachedLines != null) {
-            lineReader = new LineReader(cachedLines);
+            setupForArray(cachedLines);
         } else {
             fileReader = new BufferedReader(new FileReader(file));
             this.file = file;
+            this.cache = pcache;
         }
     }
 
-    public String readLine() throws IOException {
-        if (lineReader != null) {
-            return lineReader.readCachedLine();
-        }
+//    public LineReader(File file) throws FileNotFoundException {
+//        this(file, null);
+//    }
 
-        String line = fileReader.readLine();
-        if (line != null) {
-            lines.add(line);
+    public String readLine() throws IOException {
+        if (cached) {
+            return this.readCachedLine();
         } else {
-            //end of stream
-            cache.put(file.getAbsolutePath(), lines);
+            String line = fileReader.readLine();
+            if (this.cache != null) {
+                if (line != null) {
+                    lines.add(line);
+                } else {
+                    //end of stream
+                    if (this.cache != null) {
+                        cache.put(file.getAbsolutePath(), lines);
+                    }
+                }
+            }
+            return line;
         }
-        return line;
     }
 
     public void close() throws IOException {
