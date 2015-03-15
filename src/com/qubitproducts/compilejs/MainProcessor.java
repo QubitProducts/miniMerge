@@ -23,6 +23,7 @@ import static com.qubitproducts.compilejs.Log.LOG;
 import static com.qubitproducts.compilejs.Log.log;
 import com.qubitproducts.compilejs.fs.LineReader;
 import static com.qubitproducts.compilejs.MainProcessorHelper.chunkToExtension;
+import static com.qubitproducts.compilejs.Utils.translateClasspathToPath;
 import com.qubitproducts.compilejs.fs.CFile;
 import com.qubitproducts.compilejs.fs.FSFile;
 import java.io.BufferedReader;
@@ -78,66 +79,11 @@ public class MainProcessor {
     } else {
       trimmedString = importPattern.matcher(trimmedString).replaceFirst(EMPTY);
     }
-    trimmedString = translateClassPath(trimmedString);
+    trimmedString = translateClasspathToPath(trimmedString);
     return trimmedString + dotJS;
   }
   
-  static public boolean classPathChar(char ch) {
-    return (ch >= 'A' && ch <= 'Z') ||
-          (ch >= 'a' && ch <= 'z') ||
-          (ch >= '0' && ch <= '9') ||
-          ch == '_';
-  }
   
-  static public boolean isClasspath(String string) {
-    if (string == null) return false;
-    
-    if (!classPathChar(string.charAt(0)) 
-        || (string.charAt(0) == '_')) {
-      return false;
-    }
-    
-    for (int i = 1; i < string.length(); i++) {
-      if (!classPathChar(string.charAt(0))) {
-        return false;
-      }
-    }
-    
-    return true;
-  }
-  
-  static public String translateClassPath(String path) {
-    int len = path.length();
-    StringBuilder sb = new StringBuilder();
-    int curr = 0;
-    boolean prevDot = false;
-    boolean oneDotUSed = false;
-    char lastChar = 0;
-    for (int i = 0; i < len; i++) {
-      char ch = path.charAt(i);
-      boolean acceptable = classPathChar(ch) || ch == '*';
-      if (acceptable) {
-        if (prevDot) {
-          if (curr > 0) {
-            if (!oneDotUSed && lastChar == '#') {
-              oneDotUSed = true;
-              sb.append(".");
-            } else sb.append(FSLASH);
-            curr++;
-          }
-          prevDot = false;
-        }
-        
-        sb.append(ch);
-        curr++;
-      } else {
-        prevDot = true;
-      }
-      lastChar = ch;
-    }
-    
-    return sb.toString();
-  }
   
   private static int cssLen = CSS.length();
   /**
@@ -152,7 +98,7 @@ public class MainProcessor {
     } else {
       trimmedString = cssPattern.matcher(trimmedString).replaceFirst(EMPTY);
     }
-    trimmedString = translateClassPath(trimmedString);
+    trimmedString = translateClasspathToPath(trimmedString);
     return trimmedString + ".css";
   }
   
@@ -179,6 +125,7 @@ public class MainProcessor {
   /*
    * simple custom console logger
    */
+    private Map<String, List<String>> lineReaderCache;
   
   
   /**
@@ -260,6 +207,17 @@ public class MainProcessor {
    */
   public void setPreProcessorChar(char preProcessorChar) {
     this.preProcessorChar = preProcessorChar;
+  }
+
+  void setLineReaderCache(Map<String, List<String>> cache) {
+    this.lineReaderCache = cache;
+  }
+
+    /**
+     * @return the lineReaderCache
+     */
+  public Map<String, List<String>> getLineReaderCache() {
+    return this.lineReaderCache;
   }
 
   public enum Types {
@@ -892,7 +850,7 @@ public class MainProcessor {
         //if (this.checkIfExists(file)) {
           //if (LOG)log(">>> FSFile DOES exist: " + file.getAbsolutePath());
           try {
-            in = file.getLineReader();
+            in = file.getLineReader(this.getLineReaderCache());
             String line;
             if (LOG)log(">>> Merging: " + file.getAbsolutePath());
             while ((line = in.readLine()) != null) {
@@ -980,7 +938,7 @@ public class MainProcessor {
         //if (this.checkIfExists(file)) {
                 //if (LOG)log(">>> FSFile DOES exist: " + file.getAbsolutePath());
                 try {
-                    in = file.getLineReader();
+                    in = file.getLineReader(this.getLineReaderCache());
                     
                     String tmp;
                     List<String> lines = new ArrayList<String>();
@@ -1131,7 +1089,7 @@ public class MainProcessor {
           boolean ignoreDependencies,
           String currentOutput)
           throws FileNotFoundException, IOException {
-    //not cache
+    //not lineReaderCache
     processed.clear();
     alreadyProcessed.clear();
     
@@ -1266,7 +1224,7 @@ public class MainProcessor {
 
     if (!ignoreDependencies) try {
 
-    in = file.getLineReader();
+    in = file.getLineReader(this.getLineReaderCache());
     line = in.readLine();
     
     // make sure its not excluded first line

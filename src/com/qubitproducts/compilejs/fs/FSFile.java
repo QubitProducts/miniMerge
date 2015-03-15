@@ -9,6 +9,7 @@ import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -114,8 +115,8 @@ public interface FSFile extends Cacheable {
   public List<String> saveLines() throws IOException;
   public List<String> saveLines(List<String> lines) throws IOException;
   
-  public LineReader getLineReader() throws IOException;
-
+  public LineReader getLineReader(Map<String, List<String>> cache) throws IOException;
+  
   public BufferedWriter getBufferedWriter() throws IOException;
 
   public BufferedWriter getBufferedWriter(boolean b) throws IOException;

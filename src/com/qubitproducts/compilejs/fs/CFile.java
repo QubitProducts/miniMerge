@@ -1,7 +1,6 @@
 package com.qubitproducts.compilejs.fs;
 
 import static com.qubitproducts.compilejs.Log.LOG;
-import static com.qubitproducts.compilejs.Log.isLog;
 import static com.qubitproducts.compilejs.Log.log;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -13,6 +12,7 @@ import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.CharBuffer;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
@@ -39,29 +39,43 @@ public class CFile
   @Override
   public void clear() {
     cache.clear();
+    //LineReader.clearCache(plainFile);
   }
   
   @Override
   public String getAsString() {
-    try {
-    String cached = cache.get(plainFile.getCanonicalPath());
-    
-    if (cached == null) {
-      LineReader reader = new LineReader(plainFile);
-      StringBuilder builder = new StringBuilder();
-      String line = null;
-      while((line = reader.readLine()) != null) {
-        builder.append(line);
-        builder.append('\n');
-      }
-    }
-    
-    } catch (IOException ioe) {
-      if (LOG) {
-        log("Could not read file: " + plainFile.getName());
-      }
-    }
-    return null;
+        try {
+            String canonical = plainFile.getCanonicalPath();
+            String cached = cache.get(canonical);
+
+            if (cached == null) {
+                BufferedReader reader = null;
+                try {
+                    reader = new BufferedReader(
+                        new FileReader(plainFile));
+                    StringBuilder builder = new StringBuilder();
+                    CharBuffer charBuffer = CharBuffer.allocate(1024);
+                    while ((reader.read(charBuffer)) != -1) {
+                        charBuffer.flip();
+                        builder.append(charBuffer);
+                    }
+                    String result = builder.toString();
+                    cache.put(canonical, result);
+                    return result;
+                } finally {
+                    if (reader != null) {
+                        reader.close();
+                    }
+                }
+            } else {
+                return cached;
+            }
+        } catch (IOException ioe) {
+            if (LOG) {
+                log("Could not read file: " + plainFile.getName());
+            }
+        }
+        return null;
   }
 
   public CFile(String pathname) {
@@ -73,7 +87,7 @@ public class CFile
   }
 
   public CFile(FSFile file) {
-    plainFile = new File(file.getPath());
+    this(file.getPath());
   }
 
   public CFile(String parent, String child) {
@@ -85,7 +99,7 @@ public class CFile
   }
 
   public CFile(FSFile parent, String child) {
-    plainFile = new File(parent.getPath(), child);
+    this(parent.getPath(), child);
   }
 
   public CFile(URI uri) {
@@ -205,6 +219,9 @@ public class CFile
   @Override
   public FSFile[] listFiles() {
     File[] files = plainFile.listFiles();
+    if (files == null) {
+        return null;
+    }
     FSFile[] array = new CFile[files.length];
     for (int i = 0; i < files.length; i++) {
       array[i] = new CFile(files[i]);
@@ -215,6 +232,9 @@ public class CFile
   @Override
   public FSFile[] listFiles(FilenameFilter filter) {
     File[] files = plainFile.listFiles(filter);
+    if (files == null) {
+        return null;
+    }
     FSFile[] array = new CFile[files.length];
     for (int i = 0; i < files.length; i++) {
       array[i] = new CFile(files[i]);
@@ -225,6 +245,9 @@ public class CFile
   @Override
   public FSFile[] listFiles(FileFilter filter) {
     File[] files = plainFile.listFiles(filter);
+    if (files == null) {
+        return null;
+    }
     FSFile[] array = new CFile[files.length];
     for (int i = 0; i < files.length; i++) {
       array[i] = new CFile(files[i]);
@@ -337,8 +360,8 @@ public class CFile
     return new CFile(this, path);
   }
 
-  public LineReader getLineReader() throws FileNotFoundException {
-    LineReader lr = new LineReader(plainFile);
+  public LineReader getLineReader(Map<String, List<String>> cache) throws FileNotFoundException {
+    LineReader lr = new LineReader(plainFile, cache);
     return lr;
   }
 
@@ -372,5 +395,5 @@ public class CFile
   public List<String> saveLines(List<String> lines) throws IOException {
     throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
   }
-
+  
 }

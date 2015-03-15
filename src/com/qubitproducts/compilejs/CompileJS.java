@@ -18,23 +18,25 @@ package com.qubitproducts.compilejs;
 
 import com.qubitproducts.compilejs.Log.LogLevel;
 import static com.qubitproducts.compilejs.Log.setLevel;
-import com.qubitproducts.compilejs.fs.LineReader;
 import com.qubitproducts.compilejs.processors.JSWrapperProcessor;
 import com.qubitproducts.compilejs.processors.JSTemplateProcessor;
 import com.qubitproducts.compilejs.processors.JSStringProcessor;
 import static com.qubitproducts.compilejs.MainProcessorHelper.chunkToExtension;
+import com.qubitproducts.compilejs.fs.CFile;
 import com.qubitproducts.compilejs.processors.InjectionProcessor;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.logging.Logger;
 
 /**
@@ -42,7 +44,7 @@ import java.util.logging.Logger;
  * @author Peter (Piotr) Fronc <peter.fronc@qubitproducts.com>
  */
 public class CompileJS {
-
+    private Map<String, List<String>> lineReaderCache = null;
     public static String MORE_ARGS = "\nNeed more arguments.\n"
         + "\n"
         + "Example:\n"
@@ -209,6 +211,7 @@ public class CompileJS {
         + "                         output file.\n"
         + "\n"
         + " --help,-h Shows this text                                              \n"
+        + " --config [filename] Default file name is compilejs.properties \n"
         + "================================================================================";
 
     public static final Logger LOGGER
@@ -251,18 +254,89 @@ public class CompileJS {
      * @throws java.io.IOException
      */
     public static void main(String[] args) throws IOException, Exception {
-      //add prop file reading
-      try{
-        new CompileJS().compile(args);
-      } finally {
-        LineReader.clearCache();
-      }
+        //add prop file reading
+        CompileJS c = new CompileJS();
+        Map<String, List<String>> cache = new HashMap<String, List<String>>();
+        c.setLineReaderCache(cache);
+        try {
+            c.compile(args);
+        } catch (Exception e) {
+            c.error(e);
+            LOGGER.severe("Error. " + e.getMessage());
+        } finally {
+            //wil be released
+            //cache.clear();
+        }
     }
-    
-    
-    
-    public long compile(String[] args) throws IOException, Exception {
 
+    public List<String> readConfig(String fname) {
+        CFile file = new CFile(fname);
+        if (!file.exists()) {
+            return null;
+        }
+
+        String all = file.getAsString();
+        Properties p = new Properties();
+        try {
+            p.load(new StringReader(all));
+            List<String> list = new ArrayList<String>();
+            for (String arg : p.stringPropertyNames()) {
+                list.add(arg);
+                String value = p.getProperty(arg);
+                if (value != null && !value.equals("")) {
+                    list.add(value);
+                }
+            }
+            return list;
+        } catch (IOException ex) {
+            if (Log.LOG) {
+                error(ex);
+            }
+        }
+        return null;
+    }
+
+    Callback callback = null;
+
+    public void error(Exception e) {
+        if (this.callback != null) {
+            this.callback.call(e);
+        }
+    }
+
+    public void onError(Callback c) {
+        this.callback = c;
+    }
+
+    public long compile(String[] args) throws IOException, Exception {
+        String cwd = null;
+        String configPath = "compilejs.properties";
+        for (int i = 0; i < args.length; i++) {
+            if (args[i].equals("--cwd")) {
+                cwd = args[i++ + 1];
+            } else if (args[i].equals("--config")) {
+                configPath = args[i++ + 1];
+            }
+        }
+        
+        if (cwd != null) {
+          cwd = new File(cwd).getCanonicalPath();
+        }
+        
+        if (!new CFile(configPath).isAbsolute()) {
+            configPath = new File(cwd, configPath).getAbsolutePath();
+        }
+        
+        List<String> fromConfig = readConfig(configPath);
+        
+        if (fromConfig != null) {
+            ArrayList<String> tmp = new ArrayList<String>();
+            List<String> argsList = Arrays.asList(args);
+            tmp.addAll(argsList);
+            tmp.addAll(fromConfig);
+            args = (String[]) tmp.toArray(new String[]{});
+        }
+        
         boolean exit = false;
         long start = System.nanoTime();
         long done = 0;
@@ -299,7 +373,6 @@ public class CompileJS {
         boolean withSourceBase = false;
         String excludeFilePatterns = null;
         String excludeFilePathPatterns = null;
-        String cwd = null;
         boolean fsExistsOption = true;
         boolean perExtensions = true;
         
@@ -387,8 +460,6 @@ public class CompileJS {
                     withSourceBase = true;
                 } else if (args[i].equals("--exclude-file-patterns")) {
                     excludeFilePatterns = args[i++ + 1];
-                } else if (args[i].equals("--cwd")) {
-                    cwd = args[i++ + 1];
                 } else if (args[i].equals("--exclude-file-path-patterns")) {
                     excludeFilePathPatterns = args[i++ + 1];
                 } else if (args[i].equals("--no-eol")) {
@@ -441,10 +512,6 @@ public class CompileJS {
         
         if (!suffixPerExtension.containsKey("js")) {
             suffixPerExtension.put("js", defaultSuffix + "\n"); //clean up defaults
-        }
-        
-        if (cwd != null) {
-          cwd = new File(cwd).getCanonicalPath();
         }
         
         //validate and refresh out
@@ -573,6 +640,7 @@ public class CompileJS {
             try {
                 out = new File(cwd, out).getAbsolutePath();
                 miniProcessor = new MainProcessor();
+                miniProcessor.setLineReaderCache(this.getLineReaderCache());
                 miniProcessor.onlyClassPath(onlyClasspath);
                 miniProcessor.setKeepLines(keepLines);
                 miniProcessor.setAssumeFilesExist(!fsExistsOption);
@@ -691,7 +759,6 @@ public class CompileJS {
 //            } catch (IOException ex) {
 //                Logger.getLogger(CompileJS.class.getName()).log(Level.SEVERE, null, ex);
             } finally {
-                LineReader.clearCache();
                 if (miniProcessor != null) {
                   miniProcessor.clearCache();
                 }
@@ -972,5 +1039,28 @@ public class CompileJS {
                 toS.append(fromS);
             }
         }
+    }
+    
+    @Override
+    public void finalize() throws Throwable {
+        try{
+            super.finalize();
+        } finally {
+            this.setLineReaderCache(null); //release but not clear
+        }
+    }
+    
+    /**
+     * @return the lineReaderCache
+     */
+    public Map<String, List<String>> getLineReaderCache() {
+        return lineReaderCache;
+    }
+
+    /**
+     * @param cache the lineReaderCache to set
+     */
+    public void setLineReaderCache(Map<String, List<String>> cache) {
+        this.lineReaderCache = cache;
     }
 }
