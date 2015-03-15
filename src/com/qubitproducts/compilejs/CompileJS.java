@@ -260,9 +260,6 @@ public class CompileJS {
         c.setLineReaderCache(cache);
         try {
             c.compile(args);
-        } catch (Exception e) {
-            c.error(e);
-            LOGGER.severe("Error. " + e.getMessage());
         } finally {
             //wil be released
             //cache.clear();
