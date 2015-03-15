@@ -219,6 +219,9 @@ public class CFile
   @Override
   public FSFile[] listFiles() {
     File[] files = plainFile.listFiles();
+    if (files == null) {
+        return null;
+    }
     FSFile[] array = new CFile[files.length];
     for (int i = 0; i < files.length; i++) {
       array[i] = new CFile(files[i]);
@@ -229,6 +232,9 @@ public class CFile
   @Override
   public FSFile[] listFiles(FilenameFilter filter) {
     File[] files = plainFile.listFiles(filter);
+    if (files == null) {
+        return null;
+    }
     FSFile[] array = new CFile[files.length];
     for (int i = 0; i < files.length; i++) {
       array[i] = new CFile(files[i]);
@@ -239,6 +245,9 @@ public class CFile
   @Override
   public FSFile[] listFiles(FileFilter filter) {
     File[] files = plainFile.listFiles(filter);
+    if (files == null) {
+        return null;
+    }
     FSFile[] array = new CFile[files.length];
     for (int i = 0; i < files.length; i++) {
       array[i] = new CFile(files[i]);

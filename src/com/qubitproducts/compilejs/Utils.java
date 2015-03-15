@@ -53,12 +53,17 @@ public class Utils {
     }
   
   static public String translateClasspathToPath(String path) {
+    if (path == null) {
+        return "";
+    }
+    
     int len = path.length();
     StringBuilder sb = new StringBuilder();
     int curr = 0;
     boolean prevDot = false;
     boolean oneDotUSed = false;
     char lastChar = 0;
+    
     for (int i = 0; i < len; i++) {
       char ch = path.charAt(i);
       boolean acceptable = classPathElementChar(ch) || ch == '*';
