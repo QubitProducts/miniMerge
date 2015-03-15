@@ -254,8 +254,6 @@ public class CompileJS {
       //add prop file reading
       try{
         new CompileJS().compile(args);
-      } catch (Exception e) {
-        LOGGER.severe("Error. " + e.getMessage());
       } finally {
         LineReader.clearCache();
       }
