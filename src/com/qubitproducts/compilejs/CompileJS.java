@@ -210,7 +210,14 @@ public class CompileJS {
         + "          html-output -> all files should be merged into one html\n"
         + "                         output file.\n"
         + "\n"
-        + " --help,-h Shows this text                                              \n"
+        + " --add-excluded-files   if some files must be absolutely excluded \n" 
+        + "                      list them comma separated.                  \n"
+        + " --file-search-excluded Do not enter to directories (when directory \n"
+        + "          specified).\n"
+        + "          Pass java regex inside: _dname.* will cause any  \n"
+        + "          directory name starting with _dname to be ignored.\n"
+        + "          Note: this option does not apply for dependencies search.\n"
+        + " --help,-h Shows this text                                        \n"
         + " --config [filename] Default file name is compilejs.properties \n"
         + "================================================================================";
 
@@ -265,6 +272,8 @@ public class CompileJS {
             //cache.clear();
         }
     }
+    
+    public static String PROPERTY_FILE_NAME = "compilejs.config";
 
     public List<String> readConfig(String fname) {
         CFile file = new CFile(fname);
@@ -272,22 +281,36 @@ public class CompileJS {
             return null;
         }
 
-        String all = file.getAsString();
-        Properties p = new Properties();
         try {
-            p.load(new StringReader(all));
+            String all = file.getAsString();
+            String[] allOptions = null;
+
+            if (all != null) {
+              allOptions = all.split("\n");
+            }
+            
             List<String> list = new ArrayList<String>();
-            for (String arg : p.stringPropertyNames()) {
-                list.add(arg);
-                String value = p.getProperty(arg);
-                if (value != null && !value.equals("")) {
-                    list.add(value);
+            
+            if (allOptions != null) for (String arg : allOptions) {
+                arg = arg.trim();
+                
+                int spaceIdx = arg.indexOf(" ");
+                if (spaceIdx != -1) {
+                    String name = arg.substring(0, spaceIdx);
+                    String value = arg.substring(spaceIdx + 1);
+                    list.add(name);
+                    if (value != null && !value.equals("")) {
+                        list.add(value);
+                    }
+                } else {
+                    list.add(arg);
                 }
             }
             return list;
-        } catch (IOException ex) {
+        } catch (Exception ex) {
             if (Log.LOG) {
-                error(ex);
+              error(ex);
+              log(ex.getMessage());
             }
         }
         return null;
@@ -305,19 +328,40 @@ public class CompileJS {
         this.callback = c;
     }
 
-    public long compile(String[] args) throws IOException, Exception {
-        String cwd = null;
-        String configPath = "compilejs.properties";
+    String getParamFromArgs(String[] args, String name, String _default) {
+        String param = null;
         for (int i = 0; i < args.length; i++) {
-            if (args[i].equals("--cwd")) {
-                cwd = args[i++ + 1];
-            } else if (args[i].equals("--config")) {
-                configPath = args[i++ + 1];
+            if (args[i].equals(name)) {
+                if (i < args.length - 1) {
+                    param = args[++i];
+                }
             }
         }
         
-        if (cwd != null) {
-          cwd = new File(cwd).getCanonicalPath();
+        if (param != null) {
+          return param;
+        }
+        return _default;
+    }
+    
+    String getCwdFromArgs(String[] args) throws IOException{
+        String arg = getParamFromArgs(args, "--cwd", null);
+        if (arg != null) {
+            return  new File(arg).getCanonicalPath();
+        }
+        return arg;
+    }
+    
+    public boolean compile(String[] args) throws IOException, Exception {
+        String configPath = 
+            getParamFromArgs(args, "--config", PROPERTY_FILE_NAME);
+        
+        String cwd = getCwdFromArgs(args);
+        
+        for (int i = 0; i < args.length; i++) {
+            if (args[i].equals("--config")) {
+                configPath = args[++i];
+            }
         }
         
         if (!new CFile(configPath).isAbsolute()) {
@@ -332,7 +376,11 @@ public class CompileJS {
             tmp.addAll(argsList);
             tmp.addAll(fromConfig);
             args = (String[]) tmp.toArray(new String[]{});
+            //override cwd if any
+            cwd = getCwdFromArgs(args);
         }
+        
+        /// normal process, refactor it
         
         boolean exit = false;
         long start = System.nanoTime();
@@ -373,6 +421,15 @@ public class CompileJS {
         boolean fsExistsOption = true;
         boolean perExtensions = true;
         
+        ArrayList<String> excludedFiles = new ArrayList<String>();
+        excludedFiles.add(PROPERTY_FILE_NAME);
+        
+        ArrayList<String> excludedListFiles = new ArrayList<String>();
+        //--file-search-excluded
+        
+        String excludedFilesString = "";
+        String excludedDirsString = "";
+        
         List<String> defaltWraps = Arrays.asList(new String[]{
             "/*~css*/",
             "/*~html*/",
@@ -387,14 +444,14 @@ public class CompileJS {
         try {
             for (int i = 0; i < args.length; i++) {
                 if (args[i].equals("-i")) {
-                    filesIncluded = args[i++ + 1];
+                    filesIncluded = args[++i];
 
                 } else if (args[i].equals("--keep-lines")) {
                   keepLines = true;
                 } else if (args[i].equals("-o")) {
-                    out = args[i++ + 1];
+                    out = args[++i];
                 } else if (args[i].equals("-s")) {
-                    srcString = args[i++ + 1];
+                    srcString = args[++i];
                     String[] sourceFiles = srcString.split(",");
                     for (String tmp : sourceFiles) {
                       pathsList.add(tmp);
@@ -402,7 +459,7 @@ public class CompileJS {
                 } else if (args[i].equals("--parse-only-first-comment-dependencies")) {
                     parseOnlyFirstComments = true;
                 } else if (args[i].equals("--source-base")) {
-                    String[] srcs = args[i++ + 1].split(",");
+                    String[] srcs = args[++i].split(",");
                     for (String src1 : srcs) {
                         String path = src1.trim();
                         if (!path.equals("")) {
@@ -410,7 +467,7 @@ public class CompileJS {
                         }
                     }
                 } else if (args[i].equals("-cp")) {
-                  String cp = args[i++ + 1];
+                  String cp = args[++i];
                   String path = cp.trim();
                   if (!path.equals("")) {
                       sourceBase.add(path);
@@ -422,17 +479,17 @@ public class CompileJS {
                 } else if (args[i].equals("-ir")) {
                     ignoreRJS = true;
                 } else if (args[i].equals("-dl")) {
-                    linesToExclude = args[i++ + 1];
+                    linesToExclude = args[++i];
                 } else if (args[i].equals("-df")) {
-                    filesToExclude = args[i++ + 1];
+                    filesToExclude = args[++i];
                 } else if (args[i].equals("-dw")) {
-                    wrapsToExclude = args[i++ + 1];
+                    wrapsToExclude = args[++i];
                 } else if (args[i].equals("--index")) {
                     generateIndex = true;
                 } else if (args[i].equals("--prefix")) {
-                    defaultPrefix = args[i++ + 1];
+                    defaultPrefix = args[++i];
                 } else if (args[i].equals("--suffix")) {
-                    defaultSuffix = args[i++ + 1];
+                    defaultSuffix = args[++i];
                 } else if (args[i].startsWith("--prefix-")) {
                     ps.println(args[i]);
                     prefixPerExtension.put(
@@ -456,9 +513,9 @@ public class CompileJS {
                 } else if (args[i].equals("--add-base")) {
                     withSourceBase = true;
                 } else if (args[i].equals("--exclude-file-patterns")) {
-                    excludeFilePatterns = args[i++ + 1];
+                    excludeFilePatterns = args[++i];
                 } else if (args[i].equals("--exclude-file-path-patterns")) {
-                    excludeFilePathPatterns = args[i++ + 1];
+                    excludeFilePathPatterns = args[++i];
                 } else if (args[i].equals("--no-eol")) {
                     noEol = true;
                     if (noEol) { //move it around...
@@ -469,18 +526,26 @@ public class CompileJS {
                 } else if (args[i].equals("--no-file-exist-check")) {
                     fsExistsOption = false;
                 } else if (args[i].equals("--options")) {
-                    String[] opts = args[i++ + 1].split(",");
+                    String[] opts = args[++i].split(",");
                     for (String opt : opts) {
                         options.put(opt, "true");
                     }
                 } else if (args[i].equals("-mm-mode")) {
                     perExtensions = false;
                 } else if (args[i].equals("--chunk-extensions")) {
-                    defaltWraps = Arrays.asList(args[i++ + 1].split(","));
+                    defaltWraps = Arrays.asList(args[++i].split(","));
                 } else if (args[i].equals("--no-chunks")) {
                     defaltWraps = null;
                 } else if (args[i].equals("--only-cp")) {
                   onlyClasspath = true;
+                } else if (args[i].equals("--add-excluded-files")) {
+                    excludedFilesString += args[i + 1]+ " ";
+                    String[] parts = args[++i].split(",");
+                    excludedFiles.addAll(Arrays.asList(parts));
+                } else if (args[i].equals("--file-search-excluded")) {
+                    excludedDirsString += args[i + 1]+ " ";
+                    String[] parts = args[++i].split(",");
+                    excludedListFiles.addAll(Arrays.asList(parts));
                 }
 //                else if (args[i].equals("--html-output")) {
 //                    options.put("html-output", "true");
@@ -608,6 +673,9 @@ public class CompileJS {
                 + "\n  --unix-path: " + unixPath
                 + "\n  --cwd: " + (cwd == null ? "." : cwd)
                 + "\n  --no-file-exist-check: " + !fsExistsOption
+                + "\n  --config: " + configPath
+                + "\n  --add-excluded-files: " +  excludedFilesString
+                + "\n  --file-search-excluded: " + excludedDirsString
                 + "\n\n");
         }
 
@@ -629,8 +697,8 @@ public class CompileJS {
 
         if (exit) {
             printArgs();
-            done = (System.nanoTime() - start);
-            return done;
+            //done = (System.nanoTime() - start);
+            return false;
         }
 
         if (out != null) {
@@ -640,6 +708,16 @@ public class CompileJS {
                 miniProcessor.setLineReaderCache(this.getLineReaderCache());
                 miniProcessor.onlyClassPath(onlyClasspath);
                 miniProcessor.setKeepLines(keepLines);
+                
+                if (!excludedListFiles.isEmpty()) {
+                    miniProcessor.setExcludedFilesFromListing(excludedListFiles.toArray(new String[]{}));
+                }
+                
+                if (!excludedFiles.isEmpty()) {
+                    miniProcessor.addFileNamesExcluded(
+                      excludedFiles.toArray(new String[]{}));
+                }
+                
                 miniProcessor.setAssumeFilesExist(!fsExistsOption);
                 miniProcessor.setSourceBase(sourceBase.toArray(new String[0]));
                 miniProcessor.setMergeOnly(filesIncluded.split(","));
@@ -675,9 +753,9 @@ public class CompileJS {
                         relative,
                         !dependencies,
                         out);
-
+                
                 log("Writing results...\n");
-
+                
                 if (generateIndex) {
                     String result = MainProcessorHelper
                         .getPrefixScriptPathSuffixString(
@@ -746,10 +824,15 @@ public class CompileJS {
                         miniProcessor.stripAndMergeFilesToFile(paths, true, out);
                     }
                 }
+                
+                log("\n === Wrote results to file(s): " + out +
+                    ".<extensions> === \n\n");
+                
                 if (info) {
-                    ps.println("Merging/Index finished.\n\n");
-                    ps.println("Heap: " + Runtime.getRuntime().totalMemory() / 1024 / 1024
-                        + "MB\n");
+                    ps.println(" === Merging/Index finished. ===\n");
+                    ps.println(" === Heap: " + 
+                        Runtime.getRuntime().totalMemory() / 1024 / 1024 +
+                        "MB ===\n");
                 }
 //            } catch (FileNotFoundException ex) {
 //                Logger.getLogger(CompileJS.class.getName()).log(Level.SEVERE, null, ex);
@@ -761,18 +844,16 @@ public class CompileJS {
                 }
                 
                 done = System.nanoTime() - start;
-        
                 if (info) {
-                    ps.println("Done in: "
+                    String msg = " === Done in: "
                                 + ((float) done / 1000000000.0 )
-                                + "s");
+                                + "s === \n";
+                    ps.println(msg);
                 }
             }
         }
         
-        
-        
-        return done;
+        return true;
     }
     
     private static void processPerExtensions(

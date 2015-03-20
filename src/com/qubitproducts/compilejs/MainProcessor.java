@@ -19,6 +19,7 @@
 
 package com.qubitproducts.compilejs;
 
+import static com.qubitproducts.compilejs.CompileJS.PROPERTY_FILE_NAME;
 import static com.qubitproducts.compilejs.Log.LOG;
 import static com.qubitproducts.compilejs.Log.log;
 import com.qubitproducts.compilejs.fs.LineReader;
@@ -66,7 +67,7 @@ public class MainProcessor {
   static private final Pattern cssPattern =  Pattern.compile(CSS);
   
   
-  private static int importLen = IMPORT.length();
+  private static final int importLen = IMPORT.length();
   /**
    * 
    * @param trimmedString
@@ -85,7 +86,7 @@ public class MainProcessor {
   
   
   
-  private static int cssLen = CSS.length();
+  private static final int cssLen = CSS.length();
   /**
    * 
    * @param trimmedString
@@ -126,6 +127,7 @@ public class MainProcessor {
    * simple custom console logger
    */
     private Map<String, List<String>> lineReaderCache;
+    private String[] excludedListFiles;
   
   
   /**
@@ -158,6 +160,7 @@ public class MainProcessor {
   private String[] fileExcludePatterns = null;
   private String[] filePathExcludePatterns = null;
 
+  private String[] fileNamesExcluded = null;
 
   /**
    * Private function checking if line should be excluded. It uses instance
@@ -218,6 +221,9 @@ public class MainProcessor {
      */
   public Map<String, List<String>> getLineReaderCache() {
     return this.lineReaderCache;
+  }
+  void setExcludedFilesFromListing(String[] excludedDirs) {
+    this.excludedListFiles = excludedDirs;
   }
 
   public enum Types {
@@ -482,6 +488,34 @@ public class MainProcessor {
     }
   }
   
+  public void addFileNamesExcluded(String[] names) {
+    if (names == null) return;
+    
+    if (fileNamesExcluded == null) {
+        fileNamesExcluded = names;
+    }
+    
+    String[] newArray = new String[
+      fileNamesExcluded.length + names.length
+    ];
+    
+    System.arraycopy(fileNamesExcluded, 0,
+                     newArray, 0,
+                     fileNamesExcluded.length);
+    System.arraycopy(names, 0,
+                     newArray, fileNamesExcluded.length,
+                     names.length);
+    
+    fileNamesExcluded = newArray;
+  }
+  
+  public String[] getFileNamesExcluded() {
+    return fileNamesExcluded;
+  }
+  
+  public void setFileNamesExcluded(String[] names) {
+    fileNamesExcluded = names;
+  }
   /**
    * @return the fileExcludePatterns
    */
@@ -619,24 +653,48 @@ public class MainProcessor {
    *
    * @param file  java.io.FSFile FSFile specifying tree root node (mostly a
    * directory).
+     * @param excludedFiles
    * @return List list of files.
    */
-  public static List<FSFile> listFilesTree(FSFile file) {
-    ArrayList<FSFile> results = new ArrayList();
-    FSFile[] files = file.listFiles();
-    if (files == null) {
-      results.add(file);
-    } else {
-      for (FSFile file1 : files) {
-        if (!file1.isDirectory()) {
-          results.add(file1);
-        } else {
-          List<FSFile> subdir = listFilesTree(file1);
-          results.addAll(subdir);
+  public static List<FSFile> listFilesTree(FSFile file, String[] excludedFiles) {
+    boolean check = true;
+    String regex = null;
+    if (excludedFiles != null) {
+      String tmpName = file.getName();
+      for (String excludedDir : excludedFiles) {
+        if (tmpName.matches(excludedDir)) {
+            check = false;
+            regex = excludedDir;
+            break;
         }
       }
     }
-    return results;
+    if (check) {
+      ArrayList<FSFile> results = new ArrayList();
+      FSFile[] files = file.listFiles();
+      if (files == null) {
+        results.add(file);
+      } else {
+        for (FSFile subFile : files) {
+          if (!subFile.isDirectory()) {
+            results.add(subFile);
+          } else {
+            List<FSFile> subdir = listFilesTree(subFile, excludedFiles);
+            if (subdir != null) {
+              results.addAll(subdir);
+            }
+          }
+        }
+      }
+      return results;
+    } else {
+      if (LOG) {
+        log("Excluded file by regex " + regex +
+            ": " + file.getAbsolutePath());
+      }
+    }
+    
+    return null;
   }
 
   /**
@@ -665,6 +723,20 @@ public class MainProcessor {
   protected boolean testIfFileIncluded(FSFile test) {
     String[] strings = this.getMergeOnly();
     String name = test.getName();
+    
+    String[] exludedNames = getFileNamesExcluded();
+    if (exludedNames != null) {
+        for (String exludedName : exludedNames) {
+            if (name.equals(exludedName)) {
+//                if (LOG) {
+//                    logVeryVerbosive(
+//                        " --> Excluded file by name:" + exludedName);
+//                  }
+                return false;
+            }
+        }
+    }
+    
     for (String string : strings) {
       if (string.equals("*") || name.endsWith(string)) {
         if (this.getFileExcludePatterns() != null) {
@@ -1102,9 +1174,12 @@ public class MainProcessor {
     
     for (String path : pathsToCheck) {
       FSFile startingFile = new CFile(getCwd(), path);
-      List<FSFile> tmp = MainProcessor.listFilesTree(startingFile);
-      files.put(path, tmp);
-
+      List<FSFile> tmp = MainProcessor.listFilesTree(startingFile, this.excludedListFiles);
+      
+      if (tmp != null) {
+        files.put(path, tmp);
+      }
+      
       if (startingFile.isFile()) {
         if (LOG) {
           log(">>> Dealing with file and not a directory.");
@@ -1123,7 +1198,7 @@ public class MainProcessor {
             || f.getCanonicalFile().getAbsolutePath().equals(currentOutput)) {
           // do not include current startingFile
           if (LOG) {
-            log("Excluded: " + f.getName() + " [src: " + keySet + " ]");
+            log("Excluded: " + f.getPath() + " [src: " + keySet + " ]");
           }
           tmp.remove(i--);
         } else {
