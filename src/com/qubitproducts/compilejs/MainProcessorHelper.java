@@ -129,14 +129,6 @@ public class MainProcessorHelper {
     }
     writer.flush();
   }
-
-    public static List<Object[]> getFileInChunks(List<String> lines,
-        List<String> wraps, String defaultChunkName) throws IOException {
-        
-        List<Object[]> ret = getStringInChunks(lines, wraps, defaultChunkName);
-        
-        return ret;
-    }
     
     public static HashMap<String, String> chunkToExtensionCache =
         new HashMap<String, String>();
