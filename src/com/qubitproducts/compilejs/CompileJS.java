@@ -641,6 +641,10 @@ public class CompileJS {
             wrapsToExclude = "/*~debug*/,/*~*/";
         }
 
+        if (!verbose) {
+            setLevel(LogLevel.NONE);
+        }
+        
         if (info) {
             String tmpPaths = "\n";
             for (String tmp : cleanedPaths) {
@@ -708,6 +712,11 @@ public class CompileJS {
             try {
                 out = new File(cwd, out).getAbsolutePath();
                 miniProcessor = new MainProcessor();
+
+                if (vverbose) {
+                    miniProcessor.setVeryVerbosive(true);
+                }
+                
                 miniProcessor.setLineReaderCache(this.getLineReaderCache());
                 miniProcessor.onlyClassPath(onlyClasspath);
                 miniProcessor.setKeepLines(keepLines);
@@ -737,14 +746,6 @@ public class CompileJS {
                 miniProcessor.setIgnores(linesToExclude.split(","));
                 miniProcessor.setFileIgnores(filesToExclude.split(","));
                 miniProcessor.setFromToIgnore(wrapsToExclude.split(","));
-
-                if (!verbose) {
-                    setLevel(LogLevel.NONE);
-                }
-
-                if (vverbose) {
-                    miniProcessor.setVeryVerbosive(true);
-                }
 
                 if (parseOnlyFirstComments) {
                     miniProcessor.setCheckEveryLine(false);

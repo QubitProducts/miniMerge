@@ -111,8 +111,9 @@ public class MainProcessorHelper {
     String start = replaceFirstChar(wrap, TILC, null);
     String end = wrap;
     boolean ignore = false;
+    int minLen = start.length() - 1;
     while ((line = reader.readLine()) != null) {
-      if (start.length() > 0 && line.contains(start)) {
+      if (!ignore && (start.length() > minLen) && line.contains(start)) {
         ignore = true;
       }
       if (!ignore) {
@@ -125,7 +126,6 @@ public class MainProcessorHelper {
       if (end.length() > 0 && line.contains(end)) {
         ignore = false;
       }
-      
     }
     writer.flush();
   }
@@ -271,8 +271,9 @@ public class MainProcessorHelper {
     String start = replaceFirstChar(wrap, TILC, null);
     String end = wrap;
     boolean ignore = false;
+    int minLen = wrap.length() - 1;
     if (lines != null) for (String line : lines) {
-      if (start.length() > 0 && line.contains(start)) {
+      if (!ignore && (start.length() > minLen) && line.contains(start)) {
         ignore = true;
       }
       if (!ignore) {
@@ -297,8 +298,9 @@ public class MainProcessorHelper {
     String start = replaceFirstChar(wrap, TILC, null);
     String end = wrap;
     boolean ignore = false;
+    int minLen = wrap.length() - 1;
     while ((line = reader.readLine()) != null) {
-      if (start.length() > 0 && line.contains(start)) {
+      if (!ignore && (start.length() > minLen) && line.contains(start)) {
         ignore = true;
       }
       if (!ignore) {
@@ -376,12 +378,15 @@ public class MainProcessorHelper {
   }
   
   /**
+   * @Deprecated
+   * 
    * Strip single file from wraps.
    * String wrapping content must consist on ~ pattern,
    * which translates to any starting A string can open wrapped context
    * and any string with ~ that gives same A after replacing first ~ occurrence.
    * @param file
    * @param wrap
+   * @param replacement
    * @throws FileNotFoundException
    * @throws IOException
    * @throws Exception 

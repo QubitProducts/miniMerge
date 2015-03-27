@@ -17,7 +17,7 @@ public class Log {
    * logger at FINE level.
    */
   static public enum LogLevel {
-    ALL,
+    CONSOLE,
     NONE,
     FINE,
     DEFAULT
@@ -31,7 +31,7 @@ public class Log {
     LOG = isLog();
   }
   
-  static public LogLevel LOG_LEVEL = LogLevel.DEFAULT;
+  static private LogLevel LOG_LEVEL = LogLevel.CONSOLE;
   
   public static boolean LOG = isLog();
   
@@ -39,12 +39,11 @@ public class Log {
     //return false;
     return LOG_LEVEL != LogLevel.NONE;
   }
-
+  //@todo refactor this.
   public static void log(String msg) {
     switch (LOG_LEVEL) {
-      case ALL:
+      case CONSOLE:
         System.out.println(msg);
-        LOGGER.fine(msg);
         break;
       case NONE:
         break;
@@ -52,7 +51,13 @@ public class Log {
         LOGGER.fine(msg);
         break;
       default:
-        System.out.println(msg);
+        LOGGER.info(msg);
+    }
+  }
+    
+  public static void severe(String msg) {
+    if (LOG_LEVEL != LogLevel.NONE) {
+      LOGGER.severe(msg);
     }
   }
 }
