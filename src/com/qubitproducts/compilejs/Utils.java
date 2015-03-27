@@ -53,6 +53,7 @@ public class Utils {
     }
   
   static public String translateClasspathToPath(String path) {
+    
     if (path == null) {
         return "";
     }

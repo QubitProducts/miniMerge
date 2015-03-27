@@ -29,14 +29,12 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.logging.Logger;
 
 /**
@@ -44,6 +42,7 @@ import java.util.logging.Logger;
  * @author Peter (Piotr) Fronc <peter.fronc@qubitproducts.com>
  */
 public class CompileJS {
+
     private Map<String, List<String>> lineReaderCache = null;
     public static String MORE_ARGS = "\nNeed more arguments.\n"
         + "\n"
@@ -196,8 +195,8 @@ public class CompileJS {
         + "\n"
         + " --chunk-extensions array, comma separated custom extensions used for wraps.\n"
         + " --only-cp Pass to make compilejs use only classpath baesed imports.\n"
-        + "   Default: /*~css*/,/*~html*/,/*~" + JSTemplateProcessor.JS_TEMPLATE_NAME
-                    + "*/  Those wrap definitions are used to take out\n"
+        + "   Default: *~css*,*~html*,*~" + JSTemplateProcessor.JS_TEMPLATE_NAME
+        + "*  Those wrap definitions are used to take out\n"
         + "   chunks of file outside to output with extension defined by wrap keyword.\n"
         + "   For example: /*~c-wrap*/ chunk will be written to default OUTPUT \n"
         + "   (-o option) plus c-wrap extension. Its advised to use alphanumeric\n"
@@ -210,7 +209,7 @@ public class CompileJS {
         + "          html-output -> all files should be merged into one html\n"
         + "                         output file.\n"
         + "\n"
-        + " --add-excluded-files   if some files must be absolutely excluded \n" 
+        + " --add-excluded-files   if some files must be absolutely excluded \n"
         + "                      list them comma separated.                  \n"
         + " --file-search-excluded Do not enter to directories (when directory \n"
         + "          specified).\n"
@@ -254,6 +253,7 @@ public class CompileJS {
     public static void printUsage() {
         ps.print(USAGE);
     }
+
     /**
      * Main function. See the usage blocks for args.
      *
@@ -272,7 +272,7 @@ public class CompileJS {
             //cache.clear();
         }
     }
-    
+
     public static String PROPERTY_FILE_NAME = "compilejs.config";
 
     public List<String> readConfig(String fname) {
@@ -286,31 +286,33 @@ public class CompileJS {
             String[] allOptions = null;
 
             if (all != null) {
-              allOptions = all.split("\n");
+                allOptions = all.split("\n");
             }
-            
+
             List<String> list = new ArrayList<String>();
-            
-            if (allOptions != null) for (String arg : allOptions) {
-                arg = arg.trim();
-                
-                int spaceIdx = arg.indexOf(" ");
-                if (spaceIdx != -1) {
-                    String name = arg.substring(0, spaceIdx);
-                    String value = arg.substring(spaceIdx + 1);
-                    list.add(name);
-                    if (value != null && !value.equals("")) {
-                        list.add(value);
+
+            if (allOptions != null) {
+                for (String arg : allOptions) {
+                    arg = arg.trim();
+
+                    int spaceIdx = arg.indexOf(" ");
+                    if (spaceIdx != -1) {
+                        String name = arg.substring(0, spaceIdx);
+                        String value = arg.substring(spaceIdx + 1);
+                        list.add(name);
+                        if (value != null && !value.equals("")) {
+                            list.add(value);
+                        }
+                    } else {
+                        list.add(arg);
                     }
-                } else {
-                    list.add(arg);
                 }
             }
             return list;
         } catch (Exception ex) {
             if (Log.LOG) {
-              error(ex);
-              log(ex.getMessage());
+                error(ex);
+                log(ex.getMessage());
             }
         }
         return null;
@@ -337,39 +339,39 @@ public class CompileJS {
                 }
             }
         }
-        
+
         if (param != null) {
-          return param;
+            return param;
         }
         return _default;
     }
-    
-    String getCwdFromArgs(String[] args) throws IOException{
+
+    String getCwdFromArgs(String[] args) throws IOException {
         String arg = getParamFromArgs(args, "--cwd", null);
         if (arg != null) {
-            return  new File(arg).getCanonicalPath();
+            return new File(arg).getCanonicalPath();
         }
         return arg;
     }
-    
+
     public boolean compile(String[] args) throws IOException, Exception {
-        String configPath = 
-            getParamFromArgs(args, "--config", PROPERTY_FILE_NAME);
-        
+        String configPath
+            = getParamFromArgs(args, "--config", PROPERTY_FILE_NAME);
+
         String cwd = getCwdFromArgs(args);
-        
+
         for (int i = 0; i < args.length; i++) {
             if (args[i].equals("--config")) {
                 configPath = args[++i];
             }
         }
-        
+
         if (!new CFile(configPath).isAbsolute()) {
             configPath = new File(cwd, configPath).getAbsolutePath();
         }
-        
+
         List<String> fromConfig = readConfig(configPath);
-        
+
         if (fromConfig != null) {
             ArrayList<String> tmp = new ArrayList<String>();
             List<String> argsList = Arrays.asList(args);
@@ -379,9 +381,8 @@ public class CompileJS {
             //override cwd if any
             cwd = getCwdFromArgs(args);
         }
-        
+
         /// normal process, refactor it
-        
         boolean exit = false;
         long start = System.nanoTime();
         long done = 0;
@@ -411,50 +412,50 @@ public class CompileJS {
 
         String defaultPrefix = "<script type=\"text/javascript\" src=\"";
         String defaultSuffix = "\"></script>";
-        
+
         Map<String, String> prefixPerExtension = new HashMap<String, String>();
         Map<String, String> suffixPerExtension = new HashMap<String, String>();
-        
+
         boolean withSourceBase = false;
         String excludeFilePatterns = null;
         String excludeFilePathPatterns = null;
         boolean fsExistsOption = true;
         boolean perExtensions = true;
-        
+
         ArrayList<String> excludedFiles = new ArrayList<String>();
         excludedFiles.add(PROPERTY_FILE_NAME);
-        
+
         ArrayList<String> excludedListFiles = new ArrayList<String>();
         //--file-search-excluded
-        
+
         String excludedFilesString = "";
         String excludedDirsString = "";
-        
+
         List<String> defaltWraps = Arrays.asList(new String[]{
-            "/*~css*/",
-            "/*~html*/",
-            "/*~" + JSTemplateProcessor.JS_TEMPLATE_NAME + "*/",
-            "/*~" + JSStringProcessor.JS_TEMPLATE_NAME + "*/"
+            "*~css*",
+            "*~html*",
+            "*~" + JSTemplateProcessor.JS_TEMPLATE_NAME + "*",
+            "*~" + JSStringProcessor.JS_TEMPLATE_NAME + "*"
         });
 
         MainProcessor miniProcessor = null;
         HashMap<String, String> options = new HashMap<String, String>();
         String eol = "\n";
-                
+
         try {
             for (int i = 0; i < args.length; i++) {
                 if (args[i].equals("-i")) {
                     filesIncluded = args[++i];
 
                 } else if (args[i].equals("--keep-lines")) {
-                  keepLines = true;
+                    keepLines = true;
                 } else if (args[i].equals("-o")) {
                     out = args[++i];
                 } else if (args[i].equals("-s")) {
                     srcString = args[++i];
                     String[] sourceFiles = srcString.split(",");
                     for (String tmp : sourceFiles) {
-                      pathsList.add(tmp);
+                        pathsList.add(tmp);
                     }
                 } else if (args[i].equals("--parse-only-first-comment-dependencies")) {
                     parseOnlyFirstComments = true;
@@ -467,11 +468,11 @@ public class CompileJS {
                         }
                     }
                 } else if (args[i].equals("-cp")) {
-                  String cp = args[++i];
-                  String path = cp.trim();
-                  if (!path.equals("")) {
-                      sourceBase.add(path);
-                  }
+                    String cp = args[++i];
+                    String path = cp.trim();
+                    if (!path.equals("")) {
+                        sourceBase.add(path);
+                    }
                 } else if (args[i].equals("--info")) {
                     info = true;
                 } else if (args[i].equals("-nd")) {
@@ -537,13 +538,13 @@ public class CompileJS {
                 } else if (args[i].equals("--no-chunks")) {
                     defaltWraps = null;
                 } else if (args[i].equals("--only-cp")) {
-                  onlyClasspath = true;
+                    onlyClasspath = true;
                 } else if (args[i].equals("--add-excluded-files")) {
-                    excludedFilesString += args[i + 1]+ " ";
+                    excludedFilesString += args[i + 1] + " ";
                     String[] parts = args[++i].split(",");
                     excludedFiles.addAll(Arrays.asList(parts));
                 } else if (args[i].equals("--file-search-excluded")) {
-                    excludedDirsString += args[i + 1]+ " ";
+                    excludedDirsString += args[i + 1] + " ";
                     String[] parts = args[++i].split(",");
                     excludedListFiles.addAll(Arrays.asList(parts));
                 }
@@ -560,66 +561,68 @@ public class CompileJS {
         //put defaults
         prefixPerExtension.put("", defaultPrefix);
         suffixPerExtension.put("", defaultSuffix + eol);
-        
-        if (!prefixPerExtension.containsKey("css")) {  
+
+        if (!prefixPerExtension.containsKey("css")) {
             prefixPerExtension.put("css", "<link rel=\"stylesheet\" href=\"");
         }
         if (!prefixPerExtension.containsKey("js")) {
             prefixPerExtension.put("js", defaultPrefix);
         }
-        
+
         if (!suffixPerExtension.containsKey("css")) {
             suffixPerExtension.put("css", ">\n");
         }
-        
+
         if (!suffixPerExtension.containsKey("js")) {
             suffixPerExtension.put("js", defaultSuffix + "\n"); //clean up defaults
         }
-        
+
         //validate and refresh out
         if (cwd != null && out != null) {
-          if (out.startsWith(cwd)) {
-            out = out.substring(cwd.length());
-            while (out.startsWith(File.separator)) {
-              out = out.substring(1);
+            if (out.startsWith(cwd)) {
+                out = out.substring(cwd.length());
+                while (out.startsWith(File.separator)) {
+                    out = out.substring(1);
+                }
             }
-          }
         }
-        
-        boolean dotAdded = false; 
+
+        boolean dotAdded = false;
         //sources preparation
         List<String> cleanedPaths = new ArrayList<String>();
         for (String src : pathsList) {
-          if (src.equals("")) {
-            continue;
-          }
-
-          if (cwd != null) {
-            if (src.startsWith(cwd)) {
-              src = src.substring(cwd.length());
-              while (src.startsWith(File.separator)) {
-                src = src.substring(1);
-              }
+            if (src.equals("")) {
+                continue;
             }
-          }
 
-          File srcFile = new File(cwd, src);
-
-          if (!srcFile.exists()) {
-            throw new Exception("File: "
-                + srcFile.getAbsolutePath()
-                + "Does not exist. \nPlease check your configutration.");
-          }
-
-          if (sourceBase.isEmpty()) {
-            if (srcFile.isFile()) {
-              if (!dotAdded) sourceBase.add(".");
-              dotAdded = true;
-            } else {
-              sourceBase.add(src);
+            if (cwd != null) {
+                if (src.startsWith(cwd)) {
+                    src = src.substring(cwd.length());
+                    while (src.startsWith(File.separator)) {
+                        src = src.substring(1);
+                    }
+                }
             }
-          }
-          cleanedPaths.add(src);
+
+            File srcFile = new File(cwd, src);
+
+            if (!srcFile.exists()) {
+                throw new Exception("File: "
+                    + srcFile.getAbsolutePath()
+                    + "Does not exist. \nPlease check your configutration.");
+            }
+
+            if (sourceBase.isEmpty()) {
+                if (srcFile.isFile()) {
+                    if (!dotAdded) {
+                        sourceBase.add(".");
+                    }
+                    dotAdded = true;
+                } else {
+                    sourceBase.add(src);
+                }
+            }
+            cleanedPaths.add(src);
         }
 
         if (filesIncluded == null) {
@@ -637,19 +640,19 @@ public class CompileJS {
         if (wrapsToExclude == null) {
             wrapsToExclude = "/*~debug*/,/*~*/";
         }
-        
+
         if (info) {
             String tmpPaths = "\n";
             for (String tmp : cleanedPaths) {
                 tmpPaths += "\t" + new File(cwd, tmp).getPath() + "\n";
             }
-          
+
             ps.println(
                 " miniMERGE config selected:");
             ps.println("  -i  Included file types: " + filesIncluded
                 + "\n  -o  Output: "
-                + (out == null ? "null" : 
-                    (new File(cwd, out)).getAbsolutePath() + ".EXT")
+                + (out == null ? "null"
+                    : (new File(cwd, out)).getAbsolutePath() + ".EXT")
                 + "\n  -s  Src dir: " + tmpPaths
                 + "\n  -ir Ignoring RequireJS: " + (ignoreRJS ? "yes" : "no")
                 + "\n  -nd No dependencies: " + (!dependencies)
@@ -674,7 +677,7 @@ public class CompileJS {
                 + "\n  --cwd: " + (cwd == null ? "." : cwd)
                 + "\n  --no-file-exist-check: " + !fsExistsOption
                 + "\n  --config: " + configPath
-                + "\n  --add-excluded-files: " +  excludedFilesString
+                + "\n  --add-excluded-files: " + excludedFilesString
                 + "\n  --file-search-excluded: " + excludedDirsString
                 + "\n\n");
         }
@@ -708,16 +711,16 @@ public class CompileJS {
                 miniProcessor.setLineReaderCache(this.getLineReaderCache());
                 miniProcessor.onlyClassPath(onlyClasspath);
                 miniProcessor.setKeepLines(keepLines);
-                
+
                 if (!excludedListFiles.isEmpty()) {
                     miniProcessor.setExcludedFilesFromListing(excludedListFiles.toArray(new String[]{}));
                 }
-                
+
                 if (!excludedFiles.isEmpty()) {
                     miniProcessor.addFileNamesExcluded(
-                      excludedFiles.toArray(new String[]{}));
+                        excludedFiles.toArray(new String[]{}));
                 }
-                
+
                 miniProcessor.setAssumeFilesExist(!fsExistsOption);
                 miniProcessor.setSourceBase(sourceBase.toArray(new String[0]));
                 miniProcessor.setMergeOnly(filesIncluded.split(","));
@@ -753,9 +756,9 @@ public class CompileJS {
                         relative,
                         !dependencies,
                         out);
-                
+
                 log("Writing results...\n");
-                
+
                 if (generateIndex) {
                     String result = MainProcessorHelper
                         .getPrefixScriptPathSuffixString(
@@ -764,7 +767,7 @@ public class CompileJS {
                             suffixPerExtension,
                             withSourceBase,
                             unixPath
-                            );
+                        );
 
                     BufferedWriter writer = null;
 
@@ -782,29 +785,29 @@ public class CompileJS {
                     }
                 } else {
                     if (perExtensions) {
-                        
+
                         String preTemplate = "    \"";//var template = [\n    \"",
                         String sufTemplate = "\"\n";//\\n\"\n].join('');\n",
                         String separator = "\\n\",\n    \"";//var template = [\n    \"",
-                        
+
                         miniProcessor.addProcessor(new JSTemplateProcessor(
                             preTemplate,
                             sufTemplate,
                             separator
                         ));
-                        
+
                         miniProcessor.addProcessor(new JSStringProcessor(
                             "\"",
                             "\"\n",
                             "\\n"
                         ));
-                        
+
                         if (options.containsKey("wrap-js")) {
                             miniProcessor.addProcessor(new JSWrapperProcessor());
                         }
-                        
-                        if (options.containsKey("injections") ||
-                            options.containsKey("line-injections")) {
+
+                        if (options.containsKey("injections")
+                            || options.containsKey("line-injections")) {
                             InjectionProcessor p = new InjectionProcessor(
                                 miniProcessor
                             );
@@ -813,7 +816,7 @@ public class CompileJS {
                             }
                             miniProcessor.addProcessor(p);
                         }
-                        
+
                         processPerExtensions(
                             paths,
                             miniProcessor,
@@ -824,15 +827,15 @@ public class CompileJS {
                         miniProcessor.stripAndMergeFilesToFile(paths, true, out);
                     }
                 }
-                
-                log("\n === Wrote results to file(s): " + out +
-                    ".<extensions> === \n\n");
-                
+
+                log("\n === Wrote results to file(s): " + out
+                    + ".<extensions> === \n\n");
+
                 if (info) {
                     ps.println(" === Merging/Index finished. ===\n");
-                    ps.println(" === Heap: " + 
-                        Runtime.getRuntime().totalMemory() / 1024 / 1024 +
-                        "MB ===\n");
+                    ps.println(" === Heap: "
+                        + Runtime.getRuntime().totalMemory() / 1024 / 1024
+                        + "MB ===\n");
                 }
 //            } catch (FileNotFoundException ex) {
 //                Logger.getLogger(CompileJS.class.getName()).log(Level.SEVERE, null, ex);
@@ -840,22 +843,22 @@ public class CompileJS {
 //                Logger.getLogger(CompileJS.class.getName()).log(Level.SEVERE, null, ex);
             } finally {
                 if (miniProcessor != null) {
-                  miniProcessor.clearCache();
+                    miniProcessor.clearCache();
                 }
-                
+
                 done = System.nanoTime() - start;
                 if (info) {
                     String msg = " === Done in: "
-                                + ((float) done / 1000000000.0 )
-                                + "s === \n";
+                        + ((float) done / 1000000000.0)
+                        + "s === \n";
                     ps.println(msg);
                 }
             }
         }
-        
+
         return true;
     }
-    
+
     private static void processPerExtensions(
         Map<String, String> paths,
         MainProcessor miniProcessor,
@@ -867,7 +870,7 @@ public class CompileJS {
             = new LinkedHashMap<String, String>();
         Map<String, Map<String, String>> extensionToNameMap
             = new LinkedHashMap<String, Map<String, String>>();
-        
+
         for (String path : paths.keySet()) {
             try {
                 String ext = path.substring(path.lastIndexOf(".") + 1);
@@ -886,11 +889,11 @@ public class CompileJS {
                 other.put(path, paths.get(path));
             }
         }
-        
+
         Map<String, StringBuilder> allchunks = new HashMap<String, StringBuilder>();
-        
+
         boolean noWraps = (wraps == null);
-        
+
         for (String ext : extensionToNameMap.keySet()) {
             Map<String, String> filePaths = extensionToNameMap.get(ext);
             String currentOut = out + "." + ext;
@@ -906,8 +909,8 @@ public class CompileJS {
                 // "": "defulaut output"
                 // "html": ".className {sdfgdasf} "
                 // "html": "<div/>"
-                Map<String, StringBuilder> chunks = 
-                    miniProcessor.mergeFilesWithChunksAndStripFromWraps(
+                Map<String, StringBuilder> chunks
+                    = miniProcessor.mergeFilesWithChunksAndStripFromWraps(
                         filePaths,
                         true,
                         currentOut,
@@ -916,38 +919,38 @@ public class CompileJS {
                 mergeChunks(allchunks, chunks);
             }
         }
-        
+
         if (options.containsKey("html2js")) {
-          String[] types = new String[]{"html", "html","xhtml"};
-          for (String type : types) {
-            StringBuilder html = allchunks.get(type);
-            if (html != null) {
-              StringBuilder[] newJS = null;
-              if (!options.containsKey("html2js-multiline")) {
-                //returns two chunks to inject passed callback
-                newJS = turnHTMLToJS(html.toString().replace("\n", ""));
-              } else {
-                newJS = turnHTMLToJS(html.toString());
-              }
-              allchunks.remove(type);
-              StringBuilder js = allchunks.get("js");
-              if (js != null) {
-                allchunks.put("js", newJS[0]
-                        .append("function(){\n")
-                        .append(js)
-                        .append("\n}")
-                        .append(newJS[1]));
-              } else {
-                allchunks.put("js", newJS[0].append(newJS[1]));
-              }
+            String[] types = new String[]{"html", "html", "xhtml"};
+            for (String type : types) {
+                StringBuilder html = allchunks.get(type);
+                if (html != null) {
+                    StringBuilder[] newJS = null;
+                    if (!options.containsKey("html2js-multiline")) {
+                        //returns two chunks to inject passed callback
+                        newJS = turnHTMLToJS(html.toString().replace("\n", ""));
+                    } else {
+                        newJS = turnHTMLToJS(html.toString());
+                    }
+                    allchunks.remove(type);
+                    StringBuilder js = allchunks.get("js");
+                    if (js != null) {
+                        allchunks.put("js", newJS[0]
+                            .append("function(){\n")
+                            .append(js)
+                            .append("\n}")
+                            .append(newJS[1]));
+                    } else {
+                        allchunks.put("js", newJS[0].append(newJS[1]));
+                    }
+                }
             }
-          }
         }
-        
+
         if (options.containsKey("css2js")) {
             StringBuilder css = allchunks.get("css");
             if (css != null) {
-              StringBuilder[] newJS = null;
+                StringBuilder[] newJS = null;
                 if (!options.containsKey("css2js-multiline")) {
                     //returns two chunks to inject passed callback
                     newJS = turnCSSToJS(css.toString().replace("\n", ""));
@@ -967,7 +970,7 @@ public class CompileJS {
                 }
             }
         }
-        
+
         if (!noWraps) {
             if (options.containsKey("html-output")) {
                 StringBuilder js = allchunks.get("js");
@@ -1006,16 +1009,16 @@ public class CompileJS {
             }
         }
     }
-    
-    static String tpl1 =
-          "(function (callback) {\n"
+
+    static String tpl1
+        = "(function (callback) {\n"
         + "    var check = function () {\n"
         + "        var head = document.getElementsByTagName('head')[0];\n"
         + "        if (head) {\n"
         + "            var css = [\n";
 
-    static String tpl2 = 
-          "            ].join(\"\");\n"
+    static String tpl2
+        = "            ].join(\"\");\n"
         + "            var styleElement;\n"
         + "            styleElement = document.createElement('style');\n"
         + "            styleElement.setAttribute('type', 'text/css');\n"
@@ -1034,7 +1037,7 @@ public class CompileJS {
         + "}(";
 
     static String tpl3 = "));";
-    
+
     static StringBuilder[] turnCSSToJS(String css) {
         String[] lines = css.split("\n");
         StringBuilder builder = new StringBuilder(tpl1);
@@ -1056,16 +1059,16 @@ public class CompileJS {
         builder.append(tpl2);
         return new StringBuilder[]{builder, new StringBuilder(tpl3)};
     }
-    
-    static String htpl1 =
-          "(function (callback) {\n"
+
+    static String htpl1
+        = "(function (callback) {\n"
         + "    var check = function () {\n"
         + "        var body = document.getElementsByTagName('body')[0];\n"
         + "        if (body) {\n"
         + "            var html = [\n";
 
-    static String htpl2 = 
-          "            ].join(\"\");\n"
+    static String htpl2
+        = "            ].join(\"\");\n"
         + "            var div;\n"
         + "            div = document.createElement('div');\n"
         + "            div.setAttribute('class', 'html-to-js');\n"
@@ -1080,7 +1083,7 @@ public class CompileJS {
         + "}(";
 
     static String htpl3 = "));";
-    
+
     static StringBuilder[] turnHTMLToJS(String html) {
         String[] lines = html.split("\n");
         StringBuilder builder = new StringBuilder(htpl1);
@@ -1102,8 +1105,8 @@ public class CompileJS {
         builder.append(htpl2);
         return new StringBuilder[]{builder, new StringBuilder(htpl3)};
     }
-    
-    static void mergeChunks (Map<String, StringBuilder> to,
+
+    static void mergeChunks(Map<String, StringBuilder> to,
         Map<String, StringBuilder> from) {
         for (String key : from.keySet()) {
             StringBuilder fromS = from.get(key);
@@ -1118,16 +1121,16 @@ public class CompileJS {
             }
         }
     }
-    
+
     @Override
     public void finalize() throws Throwable {
-        try{
+        try {
             super.finalize();
         } finally {
             this.setLineReaderCache(null); //release but not clear
         }
     }
-    
+
     /**
      * @return the lineReaderCache
      */
