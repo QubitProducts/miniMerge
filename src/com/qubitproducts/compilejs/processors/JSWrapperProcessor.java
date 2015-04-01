@@ -1,12 +1,12 @@
 /*
- *  Copyright 2013 @ QubitProducts.com
+ *  Copyright  @ QubitProducts.com
  *
- *  MiniMerge is free software: you can redistribute it and/or modify
+ *  CompileJS is free software: you can redistribute it and/or modify
  *  it under the terms of the Lesser GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  MiniMerge is distributed in the hope that it will be useful,
+ *  CompileJS is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  Lesser GNU General Public License for more details.

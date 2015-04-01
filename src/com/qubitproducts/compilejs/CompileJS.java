@@ -1,5 +1,5 @@
 /*
- *  Copyright 2013 @ QubitProducts.com
+ *  Copyright  @ QubitProducts.com
  *
  *  CompileJS is free software: you can redistribute it and/or modify
  *  it under the terms of the Lesser GNU General Public License as published by
