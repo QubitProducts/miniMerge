@@ -618,7 +618,7 @@ public class CompileJS {
         }
 
         if (linesToExclude == null) {
-            linesToExclude = "/*D*/,//=,//:include";
+            linesToExclude = "/*D*/,//=,//:include,//:import,//:css";
         }
 
         if (filesToExclude == null) {
